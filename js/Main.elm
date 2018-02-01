@@ -38,7 +38,6 @@ type Msg
     = Input String
     | Send
     | NewMessage String
-    | NewPosition Float Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -48,14 +47,14 @@ update msg model =
             ( { model | input = newInput }, Cmd.none )
 
         Send ->
-            ( Model "" messages
+            ( { model | input = "" }
             , WebSocket.send
                 "ws://localhost:8080/join?name=Leo"
-                input
+                model.input
             )
 
         NewMessage str ->
-            ( Model input (str :: messages), Cmd.none )
+            ( { model | messages = str :: model.messages }, Cmd.none )
 
 
 
@@ -77,6 +76,7 @@ view model =
         [ div [] (List.map viewMessage model.messages)
         , input [ onInput Input ] []
         , button [ onClick Send ] [ text "Send" ]
+        , text "hello"
         ]
 
 
