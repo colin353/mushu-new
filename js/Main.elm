@@ -76,7 +76,6 @@ view model =
         [ div [] (List.map viewMessage model.messages)
         , input [ onInput Input ] []
         , button [ onClick Send ] [ text "Send" ]
-        , text "hello"
         ]
 
 
