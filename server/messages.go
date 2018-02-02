@@ -16,6 +16,7 @@ const (
 	GameStateChangedAction MessageAction = "game_state_changed"
 	AuctionSeedAction      MessageAction = "auction_seed"
 	WelcomeAction          MessageAction = "welcome"
+	BidUpdatedAction       MessageAction = "bid_updated"
 
 	// Server-to-client messages
 	AuctionWonAction     MessageAction = "auction_won"
@@ -81,6 +82,20 @@ func NewAuctionSeedMessage(seed int) Message {
 	return AuctionSeedMessage{
 		Action: string(AuctionSeedAction),
 		Seed:   seed,
+	}
+}
+
+type BidUpdatedMessage struct {
+	Action string `json:"action"`
+	Bid    int    `json:"amount"`
+	Winner string `json:"winner"`
+}
+
+func NewBidUpdatedMessage(bid int, winner string) Message {
+	return BidUpdatedMessage{
+		Action: string(BidUpdatedAction),
+		Bid:    bid,
+		Winner: winner,
 	}
 }
 

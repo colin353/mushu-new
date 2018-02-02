@@ -8,6 +8,7 @@ import (
 // User represents a single connection to a player, e.g. a websocket.
 type User interface {
 	Message(message Message) error
+	Name() string
 }
 
 // GameConnection holds a list of all the active players, and can be
