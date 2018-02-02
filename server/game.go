@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"time"
 )
 
@@ -73,8 +72,6 @@ func (g *Game) RecieveMessage(user User, message Message) {
 // ChangeState can be called by the state to transition to a new state.
 func (g *Game) ChangeState(newState GameState) {
 	g.state.End()
-
-	log.Printf("State changed from %q to %q", g.state.Name(), newState)
 
 	// Clean up any timers that are currently running
 	g.nextTimeout = 0

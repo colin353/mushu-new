@@ -91,7 +91,6 @@ func (s *GameServer) HandleCommunication(player Player) {
 		}
 
 		msg, err := DecodeMessage(data)
-		log.Printf("Player[name=%v] sent message: %v", player.Name, msg)
 		if err != nil {
 			log.Printf("Websocket[name=%v] sent invalid message: %v", player.Name, err)
 		}

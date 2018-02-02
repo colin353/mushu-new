@@ -27,7 +27,6 @@ repl-temp-*
 # Binary output from go build
 mushunew
 mushu-new
-server/server
 
 # No compiled output
 *elm.js
