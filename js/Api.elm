@@ -13,8 +13,13 @@ decodeMessage =
 {- {"action":"game_state_changed","new_state":"auction"} -}
 
 
+type GameStage
+    = ReadyStage
+    | ProductionStage
+
+
 type Action
-    = GameStateChanged String
+    = GameStateChanged GameStage
 
 
 action : D.Decoder Action
@@ -27,7 +32,20 @@ actionHelp a =
     case a of
         "game_state_changed" ->
             D.map GameStateChanged <|
-                D.field "new_state" D.string
+                (D.field "new_state" D.string
+                    |> D.andThen
+                        (\s ->
+                            case s of
+                                "ready" ->
+                                    D.succeed ReadyStage
+
+                                "production" ->
+                                    D.succeed ProductionStage
+
+                                _ ->
+                                    D.fail "Unrecognized stage name"
+                        )
+                )
 
         _ ->
             D.fail ("Received unrecognized action from server: " ++ a)
