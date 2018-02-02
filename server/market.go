@@ -1,0 +1,41 @@
+package main
+
+import "math"
+
+type Market struct {
+}
+
+type Commodity struct {
+	// Name is the name of the commodity.
+	Name string
+
+	// Supply is the amount of product that the market is holding,
+	// currently trying to sell.
+	Supply int64
+
+	// Value is the value of the product if it was infinitely rare, i.e.
+	// supply is zero.
+	Value float64
+
+	// Demand is the number which, when supply = demand, the price is 1/2
+	// of the Value.
+	Demand float64
+}
+
+// Price returns the current market price for a single unit of the commodity,
+// by looking at the amount of supply.
+func (c *Commodity) Price() float64 {
+	return c.Value * math.Exp2(-float64(c.Supply)/c.Demand)
+}
+
+// Sell takes a quantity of items to be sold, and returns the price
+// that you get for selling it.
+func (c *Commodity) Sell(quantity int64) float64 {
+	initialPrice := c.Price()
+	c.Supply += quantity
+	finalPrice := c.Price()
+
+	// To simplify it, just average the initial and final price. It gives a
+	// slight benefit to users that sell in bulk.
+	return (initialPrice + finalPrice) / 2
+}
