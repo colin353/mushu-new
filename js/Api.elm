@@ -4,22 +4,44 @@ import Json.Decode as D
 import Json.Encode as E
 
 
-decodeMessage : String -> Result String Action
-decodeMessage =
-    D.decodeString action
-
-
-
-{- {"action":"game_state_changed","new_state":"auction"} -}
-
-
 type GameStage
     = ReadyStage
     | ProductionStage
 
 
+type alias CardSeed =
+    Int
+
+
+type alias Price =
+    { blueberry : Int
+    , tomato : Int
+    , corn : Int
+    , purple : Int
+    }
+
+
+type alias Material =
+    { blueberry : Int
+    , tomato : Int
+    , corn : Int
+    , purple : Int
+    }
+
+
 type Action
     = GameStateChanged GameStage
+    | Auction CardSeed
+    | AuctionWinnerUpdated String
+    | CardGranted CardSeed
+    | PriceUpdated Price
+    | MaterialReceived Material
+    | GameOver String
+
+
+decodeMessage : String -> Result String Action
+decodeMessage =
+    D.decodeString action
 
 
 action : D.Decoder Action
@@ -47,23 +69,106 @@ actionHelp a =
                         )
                 )
 
+        "auction_seed" ->
+            D.map Auction <|
+                D.field "seed" D.int
+
+        "auction_winner_updated" ->
+            D.map AuctionWinnerUpdated <|
+                D.field "winner" D.string
+
+        "card_granted" ->
+            D.map CardGranted <|
+                D.field "seed" D.int
+
+        "price_updated" ->
+            D.map PriceUpdated <|
+                D.field "new_prices" price
+
+        "material_received" ->
+            D.map MaterialReceived <|
+                D.field "material_received" material
+
+        "game_over" ->
+            D.map GameOver <|
+                D.field "winner" D.string
+
         _ ->
             D.fail ("Received unrecognized action from server: " ++ a)
 
 
+price : D.Decoder Price
+price =
+    D.map4 Price
+        (D.field "blueberry" D.int)
+        (D.field "tomato" D.int)
+        (D.field "corn" D.int)
+        (D.field "purple" D.int)
+
+
+material : D.Decoder Material
+material =
+    price
+
+
 type ServerAction
-    = Ready
+    = JoinGame String
+    | Ready
+    | Bid
+    | Sell Material
+    | ProposeTrade Material
+    | ActivateCard CardSeed
 
 
-encodeServerAction : ServerAction -> String
-encodeServerAction =
-    E.encode 0 << serverAction
+encodeToMessage : ServerAction -> String
+encodeToMessage =
+    E.encode 0 << encodeServerAction
 
 
-serverAction : ServerAction -> E.Value
-serverAction a =
-    case a of
-        Ready ->
-            E.object
-                [ ( "action", E.string "ready" )
-                ]
+encodeServerAction : ServerAction -> E.Value
+encodeServerAction a =
+    let
+        ( actionStr, values ) =
+            case a of
+                JoinGame gameId ->
+                    ( "join_game"
+                    , [ ( "name", E.string gameId )
+                      ]
+                    )
+
+                Ready ->
+                    ( "ready", [] )
+
+                Bid ->
+                    ( "bid", [] )
+
+                Sell mat ->
+                    ( "sell"
+                    , [ ( "material", encodeMaterial mat )
+                      ]
+                    )
+
+                ProposeTrade mat ->
+                    ( "propose_trade"
+                    , [ ( "material", encodeMaterial mat )
+                      ]
+                    )
+
+                {- [todo] Finish implementing -}
+                ActivateCard seed ->
+                    ( "activate_card", [] )
+    in
+        E.object <|
+            [ ( "action", E.string actionStr )
+            ]
+                ++ values
+
+
+encodeMaterial : Material -> E.Value
+encodeMaterial { blueberry, tomato, corn, purple } =
+    E.object
+        [ ( "blueberry", E.int blueberry )
+        , ( "tomato", E.int tomato )
+        , ( "corn", E.int corn )
+        , ( "purple", E.int purple )
+        ]

@@ -97,7 +97,7 @@ update msg model =
                 Ready ->
                     ( model
                     , WebSocket.send wsUrl
-                        (Api.encodeServerAction Api.Ready)
+                        (Api.encodeToMessage Api.Ready)
                     )
 
         ProductionMsg msg ->
@@ -118,20 +118,44 @@ update msg model =
         ServerMsgReceived str ->
             case Api.decodeMessage str of
                 Ok action ->
-                    case action of
-                        Api.GameStateChanged stage ->
-                            { model
-                                | messages = str :: model.messages
-                            }
-                                |> changeStage stage
+                    { model
+                        | messages = str :: model.messages
+                    }
+                        |> handleAction action
 
                 Err e ->
                     ( { model
                         | messages =
-                            (e ++ str) :: model.messages
+                            (str ++ " <--- " ++ e) :: model.messages
                       }
                     , Cmd.none
                     )
+
+
+handleAction : Api.Action -> Model -> ( Model, Cmd Msg )
+handleAction action model =
+    {- [todo] Finish implementing -}
+    case action of
+        Api.GameStateChanged stage ->
+            changeStage stage model
+
+        Api.Auction seed ->
+            ( model, Cmd.none )
+
+        Api.AuctionWinnerUpdated winner ->
+            ( model, Cmd.none )
+
+        Api.CardGranted seed ->
+            ( model, Cmd.none )
+
+        Api.PriceUpdated price ->
+            ( model, Cmd.none )
+
+        Api.MaterialReceived mat ->
+            ( model, Cmd.none )
+
+        Api.GameOver winner ->
+            ( model, Cmd.none )
 
 
 changeStage : Api.GameStage -> Model -> ( Model, Cmd Msg )
