@@ -4,6 +4,8 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import WebSocket
+import Api
+import Debug
 
 
 main =
@@ -20,42 +22,83 @@ main =
 
 
 type alias Model =
-    { input : String
+    { stage : Stage
+    , input : String
     , messages : List String
     }
 
 
+type Stage
+    = ReadyStage ReadyModel
+
+
+type alias ReadyModel =
+    { ready : Bool
+    }
+
+
+initReadyModel =
+    { ready = False }
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( Model "" [], Cmd.none )
+    ( { stage = ReadyStage initReadyModel
+      , input = ""
+      , messages = []
+      }
+    , Cmd.none
+    )
 
 
 
 -- UPDATE
 
 
+wsUrl =
+    "ws://localhost:8080/join?name=Leo"
+
+
 type Msg
-    = Input String
-    | Send
-    | NewMessage String
-    | NewPosition Float Float
+    = Ready
+    | Input String
+    | MsgServer
+    | ServerMsgReceived String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Ready ->
+            ( model
+            , WebSocket.send wsUrl
+                (Api.encodeServerAction Api.Ready)
+            )
+
         Input newInput ->
             ( { model | input = newInput }, Cmd.none )
 
-        Send ->
-            ( Model "" messages
-            , WebSocket.send
-                "ws://localhost:8080/join?name=Leo"
-                input
+        MsgServer ->
+            ( { model | input = "" }
+            , WebSocket.send wsUrl model.input
             )
 
-        NewMessage str ->
-            ( Model input (str :: messages), Cmd.none )
+        ServerMsgReceived str ->
+            case Api.decodeMessage str of
+                Ok action ->
+                    ( { model
+                        | messages = str :: model.messages
+                      }
+                    , Debug.log (toString action) Cmd.none
+                    )
+
+                Err e ->
+                    ( { model
+                        | messages =
+                            (e ++ str) :: model.messages
+                      }
+                    , Cmd.none
+                    )
 
 
 
@@ -64,7 +107,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    WebSocket.listen "ws://localhost:8080/join?name=Leo" NewMessage
+    WebSocket.listen wsUrl ServerMsgReceived
 
 
 
@@ -75,8 +118,9 @@ view : Model -> Html Msg
 view model =
     div []
         [ div [] (List.map viewMessage model.messages)
-        , input [ onInput Input ] []
-        , button [ onClick Send ] [ text "Send" ]
+        , button [ onClick Ready ] [ text "Ready" ]
+        , input [ value model.input, onInput Input ] []
+        , button [ onClick MsgServer ] [ text "Send" ]
         ]
 
 
