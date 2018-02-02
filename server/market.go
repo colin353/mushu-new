@@ -1,6 +1,9 @@
 package main
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type CommodityType string
 
@@ -42,12 +45,12 @@ func (m *Market) Prices() map[CommodityType]float64 {
 }
 
 // Sell returns the unit price of the commodity after it has been sold.
-func (m *Market) Sell(t CommodityType, quantity int64) float64 {
+func (m *Market) Sell(t CommodityType, quantity int64) (float64, error) {
 	c, ok := m.Commodities[t]
 	if !ok {
-		return 0
+		return 0, fmt.Errorf("Invalid commodity type: %v", t)
 	}
-	return c.Sell(quantity)
+	return c.Sell(quantity), nil
 }
 
 type Commodity struct {

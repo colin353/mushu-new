@@ -260,7 +260,11 @@ func (s *TradeController) RecieveMessage(u User, m Message) {
 		}
 	case SellMessage:
 		// First, determine the price that the user would get.
-		price := s.game.Market.Sell(CommodityType(msg.Type), msg.Quantity)
+		price, err := s.game.Market.Sell(CommodityType(msg.Type), msg.Quantity)
+		if err != nil {
+			log.Printf("Got invalid SellMessage: %v", err)
+			return
+		}
 		// Inform the user that their sale is done.
 		response := NewSaleCompletedMessage(msg, price)
 		u.Message(response)
