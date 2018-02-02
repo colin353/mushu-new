@@ -16,6 +16,7 @@ const (
 	GameStateChangedAction MessageAction = "game_state_changed"
 	AuctionSeedAction      MessageAction = "auction_seed"
 	WelcomeAction          MessageAction = "welcome"
+	PriceUpdatedAction     MessageAction = "price_updated"
 
 	// Server-to-client messages
 	AuctionWonAction     MessageAction = "auction_won"
@@ -109,6 +110,18 @@ func NewWelcomeMessage(game, state string) Message {
 	}
 }
 
+type PriceUpdatedMessage struct {
+	Action string                    `json:"action"`
+	Price  map[CommodityType]float64 `json:"prices"`
+}
+
+func NewPriceUpdatedMessage(market Market) Message {
+	return PriceUpdatedMessage{
+		Action: string(PriceUpdatedAction),
+		Price:  market.Prices(),
+	}
+}
+
 // SaleCompletedMessage is sent when a sale is completed. It includes the actual
 // price for the goods in the market. The price is the unit price.
 type SaleCompletedMessage struct {
@@ -118,7 +131,7 @@ type SaleCompletedMessage struct {
 	Price    float64 `json:"price"`
 }
 
-func NewSaleCompletedMessage(s SellMessage, price float64) SaleCompletedMessage {
+func NewSaleCompletedMessage(s SellMessage, price float64) Message {
 	return SaleCompletedMessage{
 		Action:   string(SaleCompletedAction),
 		Quantity: s.Quantity,

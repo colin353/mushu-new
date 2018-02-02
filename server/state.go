@@ -224,6 +224,8 @@ func (s *TradeController) Name() GameState { return s.name }
 
 // Begin is called when the state becomes active.
 func (s *TradeController) Begin() {
+	// Should automatically update the prices at the beginning of the stage.
+	s.game.connection.Broadcast(NewPriceUpdatedMessage(s.game.Market))
 	// The trading stage ends after a certain time.
 	s.game.SetTimeout(TradingStageTime)
 }
@@ -257,9 +259,13 @@ func (s *TradeController) RecieveMessage(u User, m Message) {
 			s.stagedMaterials = msg.Materials
 		}
 	case SellMessage:
+		// First, determine the price that the user would get.
 		price := s.game.Market.Sell(CommodityType(msg.Type), msg.Quantity)
+		// Inform the user that their sale is done.
 		response := NewSaleCompletedMessage(msg, price)
 		u.Message(response)
+		// Update all other users that the price has changed.
+		s.game.connection.Broadcast(NewPriceUpdatedMessage(s.game.Market))
 	}
 }
 

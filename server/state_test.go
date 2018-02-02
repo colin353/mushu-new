@@ -97,6 +97,14 @@ func TestSelling(t *testing.T) {
 		t.Errorf("SaleCompletedMessage: %q, %q, diff: %v",
 			user.messageLog, want.messageLog, diff)
 	}
+
+	expected := TestConnection{}
+	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
+
+	if diff := CompareBroadcastLog(connection, expected); diff != "" {
+		t.Errorf("SaleCompletedMessage: %q, %q, diff: %v",
+			user.messageLog, want.messageLog, diff)
+	}
 }
 
 func TestTradeMechanism(t *testing.T) {

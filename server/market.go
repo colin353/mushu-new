@@ -11,6 +11,8 @@ const (
 	Purple    CommodityType = "purple"
 )
 
+var AllCommodities []CommodityType = []CommodityType{Tomato, Blueberry, Corn, Purple}
+
 type Market struct {
 	Commodities map[CommodityType]*Commodity
 }
@@ -18,7 +20,7 @@ type Market struct {
 func NewMarket() Market {
 	m := Market{Commodities: make(map[CommodityType]*Commodity)}
 
-	for _, c := range []CommodityType{Tomato, Blueberry, Corn, Purple} {
+	for _, c := range AllCommodities {
 		m.Commodities[c] = &Commodity{
 			Name:   string(c),
 			Supply: 100,
@@ -28,6 +30,15 @@ func NewMarket() Market {
 	}
 
 	return m
+}
+
+func (m *Market) Prices() map[CommodityType]float64 {
+	prices := make(map[CommodityType]float64)
+	for _, c := range AllCommodities {
+		prices[c] = m.Commodities[c].Price()
+	}
+
+	return prices
 }
 
 // Sell returns the unit price of the commodity after it has been sold.
