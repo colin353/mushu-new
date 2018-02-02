@@ -87,7 +87,7 @@ func NewAuctionSeedMessage(seed int) Message {
 
 type BidUpdatedMessage struct {
 	Action string `json:"action"`
-	Bid    int    `json:"amount"`
+	Bid    int    `json:"bid"`
 	Winner string `json:"winner"`
 }
 
