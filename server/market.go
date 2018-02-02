@@ -30,6 +30,15 @@ func NewMarket() Market {
 	return m
 }
 
+// Sell returns the unit price of the commodity after it has been sold.
+func (m *Market) Sell(t CommodityType, quantity int64) float64 {
+	c, ok := m.Commodities[t]
+	if !ok {
+		return 0
+	}
+	return c.Sell(quantity)
+}
+
 type Commodity struct {
 	// Name is the name of the commodity.
 	Name string
@@ -57,8 +66,9 @@ func (c *Commodity) Price() float64 {
 // that you get for selling it.
 func (c *Commodity) Sell(quantity int64) float64 {
 	initialPrice := c.Price()
-	c.Supply += quantity
+	c.Supply += quantity - 1
 	finalPrice := c.Price()
+	c.Supply += 1
 
 	// To simplify it, just average the initial and final price. It gives a
 	// slight benefit to users that sell in bulk.

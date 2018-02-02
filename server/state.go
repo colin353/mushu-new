@@ -256,6 +256,10 @@ func (s *TradeController) RecieveMessage(u User, m Message) {
 			s.stagingTime = s.game.GetTime()
 			s.stagedMaterials = msg.Materials
 		}
+	case SellMessage:
+		price := s.game.Market.Sell(CommodityType(msg.Type), msg.Quantity)
+		response := NewSaleCompletedMessage(msg, price)
+		u.Message(response)
 	}
 }
 
