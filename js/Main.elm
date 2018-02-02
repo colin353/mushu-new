@@ -23,8 +23,11 @@ main =
 
 type alias Model =
     { stage : Stage
+    , inventory : Maybe Api.Material
+    , price : Maybe Api.Price
     , input : String
     , messages : List String
+    , inventoryVisible : Bool
     }
 
 
@@ -58,8 +61,11 @@ initProductionModel =
 init : ( Model, Cmd Msg )
 init =
     ( { stage = ReadyStage initReadyModel
+      , inventory = Nothing
+      , price = Nothing
       , input = ""
       , messages = []
+      , inventoryVisible = False
       }
     , Cmd.none
     )
@@ -79,6 +85,7 @@ type Msg
     | Input String
     | MsgServer
     | ServerMsgReceived String
+    | ToggleInventory
 
 
 type ReadyMsg
@@ -131,6 +138,13 @@ update msg model =
                     , Cmd.none
                     )
 
+        ToggleInventory ->
+            ( { model
+                | inventoryVisible = not model.inventoryVisible
+              }
+            , Cmd.none
+            )
+
 
 handleAction : Api.Action -> Model -> ( Model, Cmd Msg )
 handleAction action model =
@@ -149,10 +163,15 @@ handleAction action model =
             ( model, Cmd.none )
 
         Api.PriceUpdated price ->
-            ( model, Cmd.none )
+            ( { model | price = Just price }, Cmd.none )
 
         Api.MaterialReceived mat ->
-            ( model, Cmd.none )
+            ( { model
+                | inventory =
+                    Maybe.map (addMaterial mat) model.inventory
+              }
+            , Cmd.none
+            )
 
         Api.GameOver winner ->
             ( model, Cmd.none )
@@ -172,6 +191,15 @@ changeStage stage model =
         ( { model | stage = newStage }, cmd )
 
 
+addMaterial : Api.Material -> Api.Material -> Api.Material
+addMaterial m1 m2 =
+    { blueberry = m1.blueberry + m2.blueberry
+    , tomato = m1.tomato + m2.tomato
+    , corn = m1.corn + m2.corn
+    , purple = m1.purple + m2.purple
+    }
+
+
 
 -- SUBSCRIPTIONS
 
@@ -187,17 +215,46 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ div [] (List.map viewMessage model.messages)
-        , case model.stage of
-            ReadyStage m ->
-                Html.map ReadyMsg (readyView m)
+    div [] <|
+        List.concat
+            [ [ div [] (List.map viewMessage model.messages)
+              , case model.stage of
+                    ReadyStage m ->
+                        Html.map ReadyMsg (readyView m)
 
-            ProductionStage m ->
-                Html.map ProductionMsg (productionView m)
-        , input [ value model.input, onInput Input ] []
-        , button [ onClick MsgServer ] [ text "Send" ]
+                    ProductionStage m ->
+                        Html.map ProductionMsg (productionView m)
+              , input [ value model.input, onInput Input ] []
+              , button [ onClick MsgServer ] [ text "Send" ]
+              ]
+            , if model.inventoryVisible then
+                case model.inventory of
+                    Just mat ->
+                        [ inventoryView mat ]
+
+                    {- [todo] handle case -}
+                    Nothing ->
+                        []
+              else
+                []
+            , [ toolbar model ]
+            ]
+
+
+inventoryView : Api.Material -> Html Msg
+inventoryView mat =
+    div []
+        [ text ("Blueberry: " ++ toString mat.blueberry)
+        , text ("Tomato: " ++ toString mat.tomato)
+        , text ("Corn: " ++ toString mat.corn)
+        , text ("Purple: " ++ toString mat.purple)
         ]
+
+
+toolbar : Model -> Html Msg
+toolbar m =
+    div []
+        [ button [ onClick ToggleInventory ] [ text "Inventory" ] ]
 
 
 readyView : ReadyModel -> Html ReadyMsg
