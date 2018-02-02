@@ -33,7 +33,7 @@ func TestPriceDropsWhenSelling(t *testing.T) {
 			", want before > sale price", before, price)
 	}
 
-	if price > after {
+	if price <= after {
 		t.Errorf("sale price (%v) <= price after (%v)"+
 			", want sale price > price after", price, after)
 	}

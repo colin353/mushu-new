@@ -2,7 +2,32 @@ package main
 
 import "math"
 
+type CommodityType string
+
+const (
+	Tomato    CommodityType = "tomato"
+	Blueberry CommodityType = "blueberry"
+	Corn      CommodityType = "corn"
+	Purple    CommodityType = "purple"
+)
+
 type Market struct {
+	Commodities map[CommodityType]*Commodity
+}
+
+func NewMarket() Market {
+	m := Market{Commodities: make(map[CommodityType]*Commodity)}
+
+	for _, c := range []CommodityType{Tomato, Blueberry, Corn, Purple} {
+		m.Commodities[c] = &Commodity{
+			Name:   string(c),
+			Supply: 100,
+			Value:  100.00,
+			Demand: 100,
+		}
+	}
+
+	return m
 }
 
 type Commodity struct {
