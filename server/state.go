@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"math/rand"
 	"time"
 )
@@ -69,6 +70,7 @@ func (s *WaitingController) Timer(tick time.Duration) {}
 
 // RecieveMessage is called when a user sends a message to the server.
 func (s *WaitingController) RecieveMessage(u User, m Message) {
+	log.Printf("Ready state: %v", s.ready)
 	switch m.(type) {
 	case ReadyMessage:
 		s.ready[u] = true
