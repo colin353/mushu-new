@@ -7,6 +7,7 @@ import Json.Encode as E
 type GameStage
     = ReadyStage
     | ProductionStage
+    | AuctionStage
 
 
 type alias CardSeed =
@@ -63,6 +64,9 @@ actionHelp a =
 
                                 "production" ->
                                     D.succeed ProductionStage
+
+                                "auction" ->
+                                    D.succeed AuctionStage
 
                                 _ ->
                                     D.fail "Unrecognized stage name"

@@ -8,6 +8,7 @@ import Api
 import Debug
 
 
+main : Program Never Model Msg
 main =
     Html.program
         { init = init
@@ -24,6 +25,7 @@ main =
 type alias Model =
     { stage : Stage
     , inventory : Maybe Api.Material
+    , cards : List Card
     , price : Maybe Api.Price
     , input : String
     , messages : List String
@@ -34,6 +36,7 @@ type alias Model =
 type Stage
     = ReadyStage ReadyModel
     | ProductionStage ProductionModel
+    | AuctionStage AuctionModel
 
 
 type alias ReadyModel =
@@ -41,27 +44,55 @@ type alias ReadyModel =
     }
 
 
+type alias ProductionModel =
+    Maybe Api.Material
+
+
+type alias AuctionModel =
+    { card : Maybe Card
+    , winner : Maybe String
+    , highBid : Maybe Int
+    , clock : Int
+    }
+
+
+type alias Card =
+    { name : String
+    , startingBid : Int
+    }
+
+
+blueberryJam : Card
+blueberryJam =
+    { name = "Blueberry Jam"
+    , startingBid = 3
+    }
+
+
+initReadyModel : ReadyModel
 initReadyModel =
     { ready = False }
 
 
-type alias ProductionModel =
-    Maybe
-        { blueberry : Int
-        , tomato : Int
-        , corn : Int
-        , purple : Int
-        }
-
-
+initProductionModel : ProductionModel
 initProductionModel =
     Nothing
+
+
+initAuctionModel : AuctionModel
+initAuctionModel =
+    { card = Nothing
+    , winner = Nothing
+    , highBid = Nothing
+    , clock = 60 {- [tmp] bogus value -}
+    }
 
 
 init : ( Model, Cmd Msg )
 init =
     ( { stage = ReadyStage initReadyModel
       , inventory = Nothing
+      , cards = []
       , price = Nothing
       , input = ""
       , messages = []
@@ -75,6 +106,7 @@ init =
 -- UPDATE
 
 
+wsUrl : String
 wsUrl =
     "ws://localhost:8080/join?name=Leo"
 
@@ -82,6 +114,7 @@ wsUrl =
 type Msg
     = ReadyMsg ReadyMsg
     | ProductionMsg ProductionMsg
+    | AuctionMsg AuctionMsg
     | Input String
     | MsgServer
     | ServerMsgReceived String
@@ -94,6 +127,11 @@ type ReadyMsg
 
 type ProductionMsg
     = None
+
+
+type AuctionMsg
+    = Bid
+    | ClockUpdated Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -113,6 +151,9 @@ update msg model =
                     ( model
                     , Cmd.none
                     )
+
+        AuctionMsg msg ->
+            tryUpdateAuction model (updateAuction msg)
 
         Input newInput ->
             ( { model | input = newInput }, Cmd.none )
@@ -139,11 +180,45 @@ update msg model =
                     )
 
         ToggleInventory ->
-            ( { model
-                | inventoryVisible = not model.inventoryVisible
-              }
+            ( { model | inventoryVisible = not model.inventoryVisible }
             , Cmd.none
             )
+
+
+updateAuction : AuctionMsg -> AuctionModel -> ( AuctionModel, Cmd Msg )
+updateAuction msg m =
+    case msg of
+        Bid ->
+            ( m, Cmd.none )
+
+        ClockUpdated t ->
+            ( m, Cmd.none )
+
+
+tryUpdateAuction :
+    Model
+    -> (AuctionModel -> ( AuctionModel, Cmd Msg ))
+    -> ( Model, Cmd Msg )
+tryUpdateAuction model upd =
+    case model.stage of
+        AuctionStage m ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = AuctionStage newM }
+                , cmd
+                )
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model.stage
+                )
+            )
+                ( model, Cmd.none )
 
 
 handleAction : Api.Action -> Model -> ( Model, Cmd Msg )
@@ -154,13 +229,24 @@ handleAction action model =
             changeStage stage model
 
         Api.Auction seed ->
-            ( model, Cmd.none )
+            tryUpdateAuction model <|
+                \m ->
+                    ( { m | card = {- [tmp] bogus card -} Just blueberryJam }
+                    , Cmd.none
+                    )
 
         Api.AuctionWinnerUpdated winner ->
-            ( model, Cmd.none )
+            tryUpdateAuction model <|
+                \m ->
+                    ( { m | winner = Just winner }, Cmd.none )
 
         Api.CardGranted seed ->
-            ( model, Cmd.none )
+            let
+                card =
+                    {- [tmp] bogus card -}
+                    blueberryJam
+            in
+                ( { model | cards = card :: model.cards }, Cmd.none )
 
         Api.PriceUpdated price ->
             ( { model | price = Just price }, Cmd.none )
@@ -187,6 +273,9 @@ changeStage stage model =
 
                 Api.ProductionStage ->
                     ( ProductionStage initProductionModel, Cmd.none )
+
+                Api.AuctionStage ->
+                    ( AuctionStage initAuctionModel, Cmd.none )
     in
         ( { model | stage = newStage }, cmd )
 
@@ -224,8 +313,9 @@ view model =
 
                     ProductionStage m ->
                         Html.map ProductionMsg (productionView m)
-              , input [ value model.input, onInput Input ] []
-              , button [ onClick MsgServer ] [ text "Send" ]
+
+                    AuctionStage m ->
+                        Html.map AuctionMsg (auctionView m)
               ]
             , if model.inventoryVisible then
                 case model.inventory of
@@ -237,7 +327,10 @@ view model =
                         []
               else
                 []
-            , [ toolbar model ]
+            , [ toolbar model
+              , input [ value model.input, onInput Input ] []
+              , button [ onClick MsgServer ] [ text "Send" ]
+              ]
             ]
 
 
@@ -253,8 +346,13 @@ inventoryView mat =
 
 toolbar : Model -> Html Msg
 toolbar m =
-    div []
-        [ button [ onClick ToggleInventory ] [ text "Inventory" ] ]
+    div [] <|
+        List.concat
+            [ [ button [ onClick ToggleInventory ] [ text "Inventory" ] ]
+            , List.map
+                (button [] << List.singleton << text << .name)
+                m.cards
+            ]
 
 
 readyView : ReadyModel -> Html ReadyMsg
@@ -270,6 +368,48 @@ productionView m =
         , button [ onClick None ] [ text "Tomato" ]
         , button [ onClick None ] [ text "Corn" ]
         , button [ onClick None ] [ text "Purple" ]
+        ]
+
+
+auctionView : AuctionModel -> Html AuctionMsg
+auctionView m =
+    div []
+        [ case m.card of
+            Just c ->
+                div [] <|
+                    List.map (div [] << List.singleton) <|
+                        [ text "Currently Bidding on:"
+                        , text c.name
+                        , text <|
+                            case m.highBid of
+                                Just x ->
+                                    "Highest Bid: " ++ toString x
+
+                                Nothing ->
+                                    "No highest bid"
+                        , text <|
+                            case m.winner of
+                                Just w ->
+                                    "Highest Bidder: " ++ w
+
+                                Nothing ->
+                                    "No highest bidder"
+                        , button [ onClick Bid ]
+                            [ text <|
+                                "Bid: "
+                                    ++ toString
+                                        (case m.highBid of
+                                            Just x ->
+                                                x + 5
+
+                                            Nothing ->
+                                                c.startingBid
+                                        )
+                            ]
+                        ]
+
+            Nothing ->
+                text "No Cards in Auction"
         ]
 
 
