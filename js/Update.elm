@@ -29,11 +29,7 @@ update msg model =
                     )
 
         ProductionMsg msg ->
-            case msg of
-                None ->
-                    ( model
-                    , Cmd.none
-                    )
+            tryUpdateProduction model (updateProduction msg)
 
         AuctionMsg msg ->
             tryUpdateAuction model (updateAuction msg)
@@ -68,6 +64,15 @@ update msg model =
             )
 
 
+updateProduction : ProductionMsg -> ProductionModel -> ( ProductionModel, Cmd Msg )
+updateProduction msg m =
+    case msg of
+        FactorySelected fr ->
+            ( { m | selected = Just fr }
+            , Cmd.none
+            )
+
+
 updateAuction : AuctionMsg -> AuctionModel -> ( AuctionModel, Cmd Msg )
 updateAuction msg m =
     case msg of
@@ -96,6 +101,32 @@ updateAuction msg m =
 
         ClockUpdated t ->
             ( m, Cmd.none )
+
+
+tryUpdateProduction :
+    Model
+    -> (ProductionModel -> ( ProductionModel, Cmd Msg ))
+    -> ( Model, Cmd Msg )
+tryUpdateProduction model upd =
+    case model.stage of
+        ProductionStage m ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = ProductionStage newM }
+                , cmd
+                )
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model.stage
+                )
+            )
+                ( model, Cmd.none )
 
 
 tryUpdateAuction :
@@ -180,10 +211,28 @@ changeStage stage model =
                 Api.AuctionStage ->
                     ( AuctionStage initAuctionModel, Cmd.none )
     in
-        ( { model | stage = newStage }, cmd )
+        ( { model
+            | stage = newStage
+            , factories =
+                case model.stage of
+                    ProductionStage m ->
+                        case m.selected of
+                            Just selected ->
+                                updateMaterial selected
+                                    ((+) 1)
+                                    model.factories
+
+                            Nothing ->
+                                model.factories
+
+                    _ ->
+                        model.factories
+          }
+        , cmd
+        )
 
 
-addMaterial : Api.Material -> Api.Material -> Api.Material
+addMaterial : Api.Material Int -> Api.Material Int -> Api.Material Int
 addMaterial m1 m2 =
     { blueberry = m1.blueberry + m2.blueberry
     , tomato = m1.tomato + m2.tomato
