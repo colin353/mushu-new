@@ -6,7 +6,7 @@ jobs:
   build:
     docker:
       # specify the version
-      - image: circleci/golang:1.8
+      - image: colinmerkel/mushu-ci:latest
       
     working_directory: /go/src/github.com/colin353/mushu-new
     steps:
