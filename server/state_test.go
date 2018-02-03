@@ -77,6 +77,36 @@ func TestAuctionTimeout(t *testing.T) {
 	}
 }
 
+func TestSelling(t *testing.T) {
+	connection := TestConnection{}
+	game := NewGame("g", &connection)
+	ctrl := NewTradeController(game)
+	game.state = ctrl
+	game.Market.Commodities[Tomato].Value = 100
+	game.Market.Commodities[Tomato].Supply = 100
+	game.Market.Commodities[Tomato].Demand = 100
+
+	user := &TestUser{}
+	ctrl.RecieveMessage(user, NewSellMessage(Tomato, 1))
+
+	// Expect the winner to get a winning message.
+	want := &TestUser{}
+	want.Message(NewSaleCompletedMessage(NewSellMessage(Tomato, 1), 50))
+
+	if diff := CompareMessageLog(user, want); diff != "" {
+		t.Errorf("SaleCompletedMessage: %q, %q, diff: %v",
+			user.messageLog, want.messageLog, diff)
+	}
+
+	expected := TestConnection{}
+	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
+
+	if diff := CompareBroadcastLog(connection, expected); diff != "" {
+		t.Errorf("SaleCompletedMessage: %q, %q, diff: %v",
+			user.messageLog, want.messageLog, diff)
+	}
+}
+
 func TestTradeMechanism(t *testing.T) {
 	connection := TestConnection{}
 	game := NewGame("g", &connection)

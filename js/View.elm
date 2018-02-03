@@ -18,7 +18,8 @@ view model =
                         Html.map ReadyMsg (readyView m)
 
                     ProductionStage m ->
-                        Html.map ProductionMsg (productionView m)
+                        Html.map ProductionMsg
+                            (productionView model.factories m)
 
                     AuctionStage m ->
                         Html.map AuctionMsg (auctionView m)
@@ -40,14 +41,12 @@ view model =
             ]
 
 
-inventoryView : Api.Material -> Html Msg
+inventoryView : Api.Material Int -> Html Msg
 inventoryView mat =
-    div []
-        [ text ("Blueberry: " ++ toString mat.blueberry)
-        , text ("Tomato: " ++ toString mat.tomato)
-        , text ("Corn: " ++ toString mat.corn)
-        , text ("Purple: " ++ toString mat.purple)
-        ]
+    div [] <|
+        List.map
+            (\fr -> text (toString fr ++ ": " ++ toString (lookup fr mat)))
+            allFruits
 
 
 toolbar : Model -> Html Msg
@@ -67,14 +66,32 @@ readyView m =
         [ button [ onClick Ready ] [ text "Ready" ] ]
 
 
-productionView : ProductionModel -> Html ProductionMsg
-productionView m =
-    div []
-        [ button [ onClick None ] [ text "Blueberry" ]
-        , button [ onClick None ] [ text "Tomato" ]
-        , button [ onClick None ] [ text "Corn" ]
-        , button [ onClick None ] [ text "Purple" ]
-        ]
+productionView : Api.Material Int -> ProductionModel -> Html ProductionMsg
+productionView factories m =
+    div [] <|
+        List.map
+            (\fr ->
+                button [ onClick (FactorySelected fr) ]
+                    [ text
+                        (toString fr
+                            ++ ": "
+                            ++ toString
+                                (lookup fr factories
+                                    + (case m.selected of
+                                        Just selected ->
+                                            if selected == fr then
+                                                1
+                                            else
+                                                0
+
+                                        Nothing ->
+                                            0
+                                      )
+                                )
+                        )
+                    ]
+            )
+            allFruits
 
 
 auctionView : AuctionModel -> Html AuctionMsg
@@ -104,6 +121,7 @@ auctionView m =
                             [ text <|
                                 "Bid: "
                                     ++ toString
+                                        {- [tofix] duplicate -}
                                         (case m.highBid of
                                             Just x ->
                                                 x + 5

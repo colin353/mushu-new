@@ -45,7 +45,7 @@ func join(w http.ResponseWriter, r *http.Request) {
 	}
 
 	player := Player{
-		Name:       name,
+		name:       name,
 		Connection: conn,
 	}
 

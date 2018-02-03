@@ -198,6 +198,9 @@ func (s *AuctionController) RecieveMessage(u User, m Message) {
 			s.bid = msg.Amount
 			s.winner = u
 			s.game.SetTimeout(AuctionBidTime)
+
+			// Update everyone on the new bid and winner.
+			s.game.connection.Broadcast(NewBidUpdatedMessage(s.bid, u.Name()))
 		}
 	}
 }
@@ -224,6 +227,8 @@ func (s *TradeController) Name() GameState { return s.name }
 
 // Begin is called when the state becomes active.
 func (s *TradeController) Begin() {
+	// Should automatically update the prices at the beginning of the stage.
+	s.game.connection.Broadcast(NewPriceUpdatedMessage(s.game.Market))
 	// The trading stage ends after a certain time.
 	s.game.SetTimeout(TradingStageTime)
 }
@@ -256,6 +261,18 @@ func (s *TradeController) RecieveMessage(u User, m Message) {
 			s.stagingTime = s.game.GetTime()
 			s.stagedMaterials = msg.Materials
 		}
+	case SellMessage:
+		// First, determine the price that the user would get.
+		price, err := s.game.Market.Sell(CommodityType(msg.Type), msg.Quantity)
+		if err != nil {
+			log.Printf("Got invalid SellMessage: %v", err)
+			return
+		}
+		// Inform the user that their sale is done.
+		response := NewSaleCompletedMessage(msg, price)
+		u.Message(response)
+		// Update all other users that the price has changed.
+		s.game.connection.Broadcast(NewPriceUpdatedMessage(s.game.Market))
 	}
 }
 

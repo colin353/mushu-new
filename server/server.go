@@ -15,8 +15,12 @@ const (
 
 // Player is an implementation of User with websockets.
 type Player struct {
-	Name       string
+	name       string
 	Connection *websocket.Conn
+}
+
+func (p *Player) Name() string {
+	return p.name
 }
 
 // Message sends a player a message.

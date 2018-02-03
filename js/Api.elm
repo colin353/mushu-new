@@ -22,11 +22,11 @@ type alias Price =
     }
 
 
-type alias Material =
-    { blueberry : Int
-    , tomato : Int
-    , corn : Int
-    , purple : Int
+type alias Material a =
+    { blueberry : a
+    , tomato : a
+    , corn : a
+    , purple : a
     }
 
 
@@ -36,7 +36,7 @@ type Action
     | AuctionWinnerUpdated String
     | CardGranted CardSeed
     | PriceUpdated Price
-    | MaterialReceived Material
+    | MaterialReceived (Material Int)
     | GameOver String
 
 
@@ -110,7 +110,7 @@ price =
         (D.field "purple" D.int)
 
 
-material : D.Decoder Material
+material : D.Decoder (Material Int)
 material =
     price
 
@@ -118,9 +118,9 @@ material =
 type ServerAction
     = JoinGame String
     | Ready
-    | Bid
-    | Sell Material
-    | ProposeTrade Material
+    | Bid Int
+    | Sell (Material Int)
+    | ProposeTrade (Material Int)
     | ActivateCard CardSeed
 
 
@@ -143,8 +143,11 @@ encodeServerAction a =
                 Ready ->
                     ( "ready", [] )
 
-                Bid ->
-                    ( "bid", [] )
+                Bid x ->
+                    ( "bid"
+                    , [ ( "amount", E.int x )
+                      ]
+                    )
 
                 Sell mat ->
                     ( "sell"
@@ -168,7 +171,7 @@ encodeServerAction a =
                 ++ values
 
 
-encodeMaterial : Material -> E.Value
+encodeMaterial : Material Int -> E.Value
 encodeMaterial { blueberry, tomato, corn, purple } =
     E.object
         [ ( "blueberry", E.int blueberry )

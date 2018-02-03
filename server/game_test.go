@@ -27,6 +27,10 @@ type TestUser struct {
 	messageLog []string
 }
 
+func (u *TestUser) Name() string {
+	return u.name
+}
+
 func (u *TestUser) Message(message Message) error {
 	result, err := json.Marshal(message)
 	if err != nil {
@@ -51,6 +55,7 @@ func TestChangeState(t *testing.T) {
 
 	expected := TestConnection{}
 	expected.Broadcast(NewGameStateChangedMessage(TradeState))
+	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("ChangeState(WaitingState): %v", diff)
@@ -161,7 +166,7 @@ func TestAuctionPhases(t *testing.T) {
 	game.ChangeState(AuctionState)
 
 	// Bid on a card.
-	user := &TestUser{}
+	user := &TestUser{name: "tester"}
 	game.RecieveMessage(user, NewBidMessage(10))
 
 	// Wait until the player wins.
@@ -177,9 +182,11 @@ func TestAuctionPhases(t *testing.T) {
 	expected := TestConnection{}
 	expected.Broadcast(NewGameStateChangedMessage(AuctionState))
 	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
+	expected.Broadcast(NewBidUpdatedMessage(10, user.Name()))
 	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
 	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
 	expected.Broadcast(NewGameStateChangedMessage(TradeState))
+	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("ChangeState(WaitingState): %v", diff)

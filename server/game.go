@@ -8,6 +8,7 @@ import (
 // User represents a single connection to a player, e.g. a websocket.
 type User interface {
 	Message(message Message) error
+	Name() string
 }
 
 // GameConnection holds a list of all the active players, and can be
@@ -23,6 +24,7 @@ type Game struct {
 	state       StateController
 	nextTimeout time.Duration
 	tick        time.Duration
+	Market      Market
 }
 
 // NewGame constructs a game.
@@ -31,6 +33,7 @@ func NewGame(name string, connection GameConnection) *Game {
 		name:       name,
 		connection: connection,
 		state:      nil,
+		Market:     NewMarket(),
 	}
 	game.state = NewStateController(&game, WaitingState)
 	game.state.Begin()
