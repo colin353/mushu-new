@@ -1,8 +1,8 @@
 module View exposing (view)
 
+import BaseType exposing (..)
 import Model exposing (..)
 import Msg exposing (..)
-import Api
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -41,11 +41,13 @@ view model =
             ]
 
 
-inventoryView : Api.Material Int -> Html Msg
+inventoryView : Material Int -> Html Msg
 inventoryView mat =
     div [] <|
         List.map
-            (\fr -> text (toString fr ++ ": " ++ toString (lookup fr mat)))
+            (\fr ->
+                text (toString fr ++ ": " ++ toString (lookupMaterial fr mat))
+            )
             allFruits
 
 
@@ -66,7 +68,7 @@ readyView m =
         [ button [ onClick Ready ] [ text "Ready" ] ]
 
 
-productionView : Api.Material Int -> ProductionModel -> Html ProductionMsg
+productionView : Material Int -> ProductionModel -> Html ProductionMsg
 productionView factories m =
     div [] <|
         List.map
@@ -76,7 +78,7 @@ productionView factories m =
                         (toString fr
                             ++ ": "
                             ++ toString
-                                (lookup fr factories
+                                (lookupMaterial fr factories
                                     + (case m.selected of
                                         Just selected ->
                                             if selected == fr then

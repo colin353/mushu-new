@@ -1,41 +1,17 @@
 module Api exposing (..)
 
+import BaseType exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 
 
-type GameStage
-    = ReadyStage
-    | ProductionStage
-    | AuctionStage
-
-
-type alias CardSeed =
-    Int
-
-
-type alias Price =
-    { blueberry : Int
-    , tomato : Int
-    , corn : Int
-    , purple : Int
-    }
-
-
-type alias Material a =
-    { blueberry : a
-    , tomato : a
-    , corn : a
-    , purple : a
-    }
-
-
 type Action
-    = GameStateChanged GameStage
+    = GameStateChanged StageType
     | Auction CardSeed
     | AuctionWinnerUpdated String
     | CardGranted CardSeed
     | PriceUpdated Price
+    | SaleCompleted Int Fruit Float
     | MaterialReceived (Material Int)
     | GameOver String
 
@@ -60,13 +36,13 @@ actionHelp a =
                         (\s ->
                             case s of
                                 "ready" ->
-                                    D.succeed ReadyStage
+                                    D.succeed ReadyStageType
 
                                 "production" ->
-                                    D.succeed ProductionStage
+                                    D.succeed ProductionStageType
 
                                 "auction" ->
-                                    D.succeed AuctionStage
+                                    D.succeed AuctionStageType
 
                                 _ ->
                                     D.fail "Unrecognized stage name"
@@ -91,7 +67,7 @@ actionHelp a =
 
         "material_received" ->
             D.map MaterialReceived <|
-                D.field "material_received" material
+                D.field "material_received" (material D.int)
 
         "game_over" ->
             D.map GameOver <|
@@ -103,16 +79,16 @@ actionHelp a =
 
 price : D.Decoder Price
 price =
-    D.map4 Price
-        (D.field "blueberry" D.int)
-        (D.field "tomato" D.int)
-        (D.field "corn" D.int)
-        (D.field "purple" D.int)
+    material D.float
 
 
-material : D.Decoder (Material Int)
-material =
-    price
+material : D.Decoder a -> D.Decoder (Material a)
+material a =
+    D.map4 Material
+        (D.field "blueberry" a)
+        (D.field "tomato" a)
+        (D.field "corn" a)
+        (D.field "purple" a)
 
 
 type ServerAction
