@@ -187,8 +187,10 @@ handleAction action model =
             ( { model | price = Just price }, Cmd.none )
 
         Api.SaleCompleted count fruit price ->
-            ( { model {- [todo] implement money and subtract cost -}
-                | inventory =
+            ( { model
+                | gold = model.gold + floor (price * toFloat count)
+                , inventory =
+                    {- [note] hides negative item error -}
                     Maybe.map
                         (updateMaterial fruit (\c -> max 0 (c - count)))
                         model.inventory

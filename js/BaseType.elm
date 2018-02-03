@@ -48,6 +48,25 @@ allFruits =
     [ Blueberry, Tomato, Corn, Purple ]
 
 
+fruitFromString : String -> Maybe Fruit
+fruitFromString str =
+    case str of
+        "blueberry" ->
+            Just Blueberry
+
+        "tomato" ->
+            Just Tomato
+
+        "corn" ->
+            Just Corn
+
+        "purple" ->
+            Just Purple
+
+        _ ->
+            Nothing
+
+
 lookupMaterial : Fruit -> Material a -> a
 lookupMaterial fr mat =
     case fr of

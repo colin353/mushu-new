@@ -65,6 +65,12 @@ actionHelp a =
             D.map PriceUpdated <|
                 D.field "new_prices" price
 
+        "sale_completed" ->
+            D.map3 SaleCompleted
+                (D.field "quantiy" D.int)
+                (D.field "type" fruit)
+                (D.field "price" D.float)
+
         "material_received" ->
             D.map MaterialReceived <|
                 D.field "material_received" (material D.int)
@@ -75,6 +81,20 @@ actionHelp a =
 
         _ ->
             D.fail ("Received unrecognized action from server: " ++ a)
+
+
+fruit : D.Decoder Fruit
+fruit =
+    D.string
+        |> D.andThen
+            (\s ->
+                case fruitFromString s of
+                    Just fruit ->
+                        D.succeed fruit
+
+                    Nothing ->
+                        D.fail "Unrecognized fruit name"
+            )
 
 
 price : D.Decoder Price

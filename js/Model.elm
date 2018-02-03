@@ -5,6 +5,7 @@ import BaseType exposing (..)
 
 type alias Model =
     { stage : Stage
+    , gold : Int
     , inventory : Maybe (Material Int)
     , factories : Material Int
     , cards : List Card
@@ -41,6 +42,7 @@ type alias AuctionModel =
 initModel : Model
 initModel =
     { stage = ReadyStage initReadyModel
+    , gold = 0
     , inventory = Nothing
     , factories = emptyMaterial
     , cards = []
