@@ -68,6 +68,7 @@ func (s *GameServer) Broadcast(message Message) error {
 // queues a JoinMessage from this new player, which our game thread picks up.
 func (s *GameServer) AddPlayer(player Player) {
 	log.Printf("Adding new player %q to game %q", player.Name, s.game.name)
+
 	s.incomingMessages <- NewEvent(&player, NewJoinMessage())
 }
 
@@ -91,6 +92,7 @@ func (s *GameServer) HandleCommunication(player Player) {
 		}
 
 		msg, err := DecodeMessage(data)
+		log.Printf("Player[name=%v] sent message: %v", player.Name, msg)
 		if err != nil {
 			log.Printf("Websocket[name=%v] sent invalid message: %v", player.Name, err)
 		}
