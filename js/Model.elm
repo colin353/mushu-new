@@ -15,6 +15,13 @@ type alias Model =
     }
 
 
+type Fruit
+    = Blueberry
+    | Tomato
+    | Corn
+    | Purple
+
+
 type Stage
     = ReadyStage ReadyModel
     | ProductionStage ProductionModel
@@ -51,6 +58,19 @@ initModel =
     }
 
 
+initModel : Model
+initModel =
+    { stage = ReadyStage initReadyModel
+    , inventory = Nothing
+    , factories = emptyMaterial
+    , cards = []
+    , price = Nothing
+    , input = ""
+    , messages = []
+    , inventoryVisible = False
+    }
+
+
 initReadyModel : ReadyModel
 initReadyModel =
     { ready = False }
@@ -67,4 +87,50 @@ initAuctionModel =
     , winner = Nothing
     , highBid = Nothing
     , clock = 60 {- [tmp] bogus value -}
+    }
+
+
+allFruits : List Fruit
+allFruits =
+    [ Blueberry, Tomato, Corn, Purple ]
+
+
+lookup : Fruit -> Api.Material a -> a
+lookup fr mat =
+    case fr of
+        Blueberry ->
+            mat.blueberry
+
+        Tomato ->
+            mat.tomato
+
+        Corn ->
+            mat.corn
+
+        Purple ->
+            mat.purple
+
+
+updateMaterial : Fruit -> (a -> a) -> Api.Material a -> Api.Material a
+updateMaterial fr upd mat =
+    case fr of
+        Blueberry ->
+            { mat | blueberry = upd mat.blueberry }
+
+        Tomato ->
+            { mat | tomato = upd mat.tomato }
+
+        Corn ->
+            { mat | corn = upd mat.corn }
+
+        Purple ->
+            { mat | purple = upd mat.purple }
+
+
+emptyMaterial : Api.Material Int
+emptyMaterial =
+    { blueberry = 0
+    , tomato = 0
+    , corn = 0
+    , purple = 0
     }
