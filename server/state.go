@@ -198,6 +198,9 @@ func (s *AuctionController) RecieveMessage(u User, m Message) {
 			s.bid = msg.Amount
 			s.winner = u
 			s.game.SetTimeout(AuctionBidTime)
+
+			// Update everyone on the new bid and winner.
+			s.game.connection.Broadcast(NewBidUpdatedMessage(s.bid, u.Name()))
 		}
 	}
 }
