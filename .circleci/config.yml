@@ -17,5 +17,4 @@ jobs:
       - run: cd server; go test -v ./...
 
         # Try to build the elm code.
-      - run: npm install -g elm
       - run: cd js; elm make Main.elm
