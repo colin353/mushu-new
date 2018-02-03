@@ -18,6 +18,7 @@ const (
 	WelcomeAction          MessageAction = "welcome"
 	PriceUpdatedAction     MessageAction = "price_updated"
 	BidUpdatedAction       MessageAction = "bid_updated"
+	SetClockAction         MessageAction = "set_clock"
 
 	// Server-to-client messages
 	AuctionWonAction     MessageAction = "auction_won"
@@ -101,6 +102,20 @@ func NewBidUpdatedMessage(bid int, winner string) Message {
 		Winner: winner,
 	}
 }
+
+type SetClockMessage struct {
+	Action string `json:"action"`
+	Time   int    `json:"time"`
+}
+
+func NewSetClockMessage(t time.Duration) Message {
+	return SetClockMessage{
+		Action: string(SetClockAction),
+		Time:   int(t / time.Millisecond),
+	}
+}
+
+// Server-to-client messages:
 
 type TradeCompletedMessage struct {
 	Action    string `json:"action"`

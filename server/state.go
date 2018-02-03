@@ -120,6 +120,7 @@ func (s *ProductionController) RecieveMessage(u User, m Message) {}
 func (s *ProductionController) Begin() {
 	// The production stage is timed, so we should move to the next stage
 	// after the time interval.
+	s.game.connection.Broadcast(NewSetClockMessage(ProductionTimeout))
 	s.game.SetTimeout(ProductionTimeout)
 }
 
@@ -161,8 +162,9 @@ func (s *AuctionController) issueCard() {
 		NewAuctionSeedMessage(seed),
 	)
 
-	// Set a timeout.
+	// Set a timeout, and update player clocks.
 	s.game.SetTimeout(AuctionBidTime)
+	s.game.connection.Broadcast(NewSetClockMessage(AuctionBidTime))
 }
 
 // End is called when the state is no longer active.
@@ -231,6 +233,7 @@ func (s *TradeController) Begin() {
 	s.game.connection.Broadcast(NewPriceUpdatedMessage(s.game.Market))
 	// The trading stage ends after a certain time.
 	s.game.SetTimeout(TradingStageTime)
+	s.game.connection.Broadcast(NewSetClockMessage(TradingStageTime))
 }
 
 // Timer is called when the stage is over, so just begin next stage.
