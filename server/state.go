@@ -31,7 +31,7 @@ const (
 
 	// MinPlayers sets the minimum number of players required before the game
 	// will proceed past the Waiting stage.
-	MinPlayers int = 2
+	MinPlayers int = 1
 )
 
 type StateController interface {
@@ -92,7 +92,7 @@ func (s *WaitingController) proceedIfReady() {
 		count++
 	}
 
-	if count >= MinPlayers {
+	if count >= s.game.MinPlayers {
 		s.game.ChangeState(ProductionState)
 	}
 }
