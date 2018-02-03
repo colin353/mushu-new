@@ -17,4 +17,4 @@ jobs:
       - run: cd server; go test -v ./...
 
         # Try to build the elm code.
-      - run: cd js; elm make Main.elm
+      - run: cd js; elm make --yes Main.elm
