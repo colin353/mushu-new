@@ -10,6 +10,7 @@ type Action
     | Auction CardSeed
     | BidUpdated Int String
     | AuctionWon
+    | Welcome
     | PriceUpdated Price
     | SaleCompleted Int Fruit Float
     | MaterialReceived (Material Int)
@@ -48,6 +49,9 @@ actionHelp a =
                                     D.fail "Unrecognized stage name"
                         )
                 )
+
+        "welcome" ->
+            D.succeed Welcome
 
         "auction_seed" ->
             D.map Auction <|
