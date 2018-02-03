@@ -1,5 +1,6 @@
 module Update exposing (update, subscriptions)
 
+import BaseType exposing (..)
 import Model exposing (..)
 import Msg exposing (..)
 import Api
@@ -185,6 +186,16 @@ handleAction action model =
         Api.PriceUpdated price ->
             ( { model | price = Just price }, Cmd.none )
 
+        Api.SaleCompleted count fruit price ->
+            ( { model {- [todo] implement money and subtract cost -}
+                | inventory =
+                    Maybe.map
+                        (updateMaterial fruit (\c -> max 0 (c - count)))
+                        model.inventory
+              }
+            , Cmd.none
+            )
+
         Api.MaterialReceived mat ->
             ( { model
                 | inventory =
@@ -197,18 +208,18 @@ handleAction action model =
             ( model, Cmd.none )
 
 
-changeStage : Api.GameStage -> Model -> ( Model, Cmd Msg )
+changeStage : StageType -> Model -> ( Model, Cmd Msg )
 changeStage stage model =
     let
         ( newStage, cmd ) =
             case stage of
-                Api.ReadyStage ->
+                ReadyStageType ->
                     ( ReadyStage initReadyModel, Cmd.none )
 
-                Api.ProductionStage ->
+                ProductionStageType ->
                     ( ProductionStage initProductionModel, Cmd.none )
 
-                Api.AuctionStage ->
+                AuctionStageType ->
                     ( AuctionStage initAuctionModel, Cmd.none )
     in
         ( { model
@@ -232,7 +243,7 @@ changeStage stage model =
         )
 
 
-addMaterial : Api.Material Int -> Api.Material Int -> Api.Material Int
+addMaterial : Material Int -> Material Int -> Material Int
 addMaterial m1 m2 =
     { blueberry = m1.blueberry + m2.blueberry
     , tomato = m1.tomato + m2.tomato

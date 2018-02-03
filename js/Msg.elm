@@ -1,6 +1,6 @@
 module Msg exposing (..)
 
-import Model
+import BaseType exposing (..)
 
 
 type Msg
@@ -18,7 +18,7 @@ type ReadyMsg
 
 
 type ProductionMsg
-    = FactorySelected Model.Fruit
+    = FactorySelected Fruit
 
 
 type AuctionMsg
