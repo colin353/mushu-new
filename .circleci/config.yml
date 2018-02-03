@@ -12,6 +12,10 @@ jobs:
     steps:
       - checkout
 
-      # specify any bash command here prefixed with `run: `
+        # Run go tests.
       - run: cd server; go get -v -t -d ./...
       - run: cd server; go test -v ./...
+
+        # Try to build the elm code.
+      - run: npm install -g elm
+      - run: cd js; elm make Main.elm
