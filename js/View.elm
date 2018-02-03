@@ -104,6 +104,7 @@ auctionView m =
                             [ text <|
                                 "Bid: "
                                     ++ toString
+                                        {- [tofix] duplicate -}
                                         (case m.highBid of
                                             Just x ->
                                                 x + 5

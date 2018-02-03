@@ -72,7 +72,27 @@ updateAuction : AuctionMsg -> AuctionModel -> ( AuctionModel, Cmd Msg )
 updateAuction msg m =
     case msg of
         Bid ->
-            ( m, Cmd.none )
+            ( m
+            , WebSocket.send wsUrl
+                (Api.encodeToMessage
+                    (Api.Bid
+                        {- [tofix] duplicate -}
+                        (case m.card of
+                            Just c ->
+                                case m.highBid of
+                                    Just x ->
+                                        x + 5
+
+                                    Nothing ->
+                                        c.startingBid
+
+                            Nothing ->
+                                Debug.crash
+                                    "Bid button should be disabled when no card"
+                        )
+                    )
+                )
+            )
 
         ClockUpdated t ->
             ( m, Cmd.none )

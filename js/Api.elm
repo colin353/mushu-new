@@ -118,7 +118,7 @@ material =
 type ServerAction
     = JoinGame String
     | Ready
-    | Bid
+    | Bid Int
     | Sell Material
     | ProposeTrade Material
     | ActivateCard CardSeed
@@ -143,8 +143,11 @@ encodeServerAction a =
                 Ready ->
                     ( "ready", [] )
 
-                Bid ->
-                    ( "bid", [] )
+                Bid x ->
+                    ( "bid"
+                    , [ ( "amount", E.int x )
+                      ]
+                    )
 
                 Sell mat ->
                     ( "sell"
