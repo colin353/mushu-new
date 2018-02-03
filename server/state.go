@@ -92,7 +92,7 @@ func (s *WaitingController) proceedIfReady() {
 		count++
 	}
 
-	if count >= MinPlayers {
+	if count >= s.game.MinPlayers {
 		s.game.ChangeState(ProductionState)
 	}
 }

@@ -25,6 +25,7 @@ type Game struct {
 	nextTimeout time.Duration
 	tick        time.Duration
 	Market      Market
+	MinPlayers  int
 }
 
 // NewGame constructs a game.
@@ -34,6 +35,7 @@ func NewGame(name string, connection GameConnection) *Game {
 		connection: connection,
 		state:      nil,
 		Market:     NewMarket(),
+		MinPlayers: MinPlayers,
 	}
 	game.state = NewStateController(&game, WaitingState)
 	game.state.Begin()

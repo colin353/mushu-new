@@ -90,6 +90,7 @@ func TestAuctionStart(t *testing.T) {
 func TestReadyMechanism(t *testing.T) {
 	connection := TestConnection{}
 	game := NewGame("g", &connection)
+	game.MinPlayers = 2
 
 	userA := &TestUser{}
 	userB := &TestUser{}
@@ -116,6 +117,7 @@ func TestReadyMechanism(t *testing.T) {
 func TestReadyMechanismWithMorePlayers(t *testing.T) {
 	connection := TestConnection{}
 	game := NewGame("g", &connection)
+	game.MinPlayers = 2
 
 	userA := &TestUser{}
 	userB := &TestUser{}
@@ -138,6 +140,7 @@ func TestReadyMechanismWithMorePlayers(t *testing.T) {
 func TestReadyMechanismWithLeaver(t *testing.T) {
 	connection := TestConnection{}
 	game := NewGame("g", &connection)
+	game.MinPlayers = 2
 
 	userA := &TestUser{}
 	userB := &TestUser{}
