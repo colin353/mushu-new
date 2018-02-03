@@ -10,7 +10,7 @@ import Debug
 
 wsUrl : String
 wsUrl =
-    "ws://172.17.4.125:8080/join?name=Colin"
+    "ws://localhost:8080/join?name=Leo"
 
 
 subscriptions : Model -> Sub Msg
