@@ -1,41 +1,17 @@
 module Api exposing (..)
 
+import BaseType exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 
 
-type GameStage
-    = ReadyStage
-    | ProductionStage
-    | AuctionStage
-
-
-type alias CardSeed =
-    Int
-
-
-type alias Price =
-    { blueberry : Int
-    , tomato : Int
-    , corn : Int
-    , purple : Int
-    }
-
-
-type alias Material a =
-    { blueberry : a
-    , tomato : a
-    , corn : a
-    , purple : a
-    }
-
-
 type Action
-    = GameStateChanged GameStage
+    = GameStateChanged StageType
     | Auction CardSeed
-    | AuctionWinnerUpdated String
-    | CardGranted CardSeed
+    | BidUpdated Int String
+    | AuctionWon
     | PriceUpdated Price
+    | SaleCompleted Int Fruit Float
     | MaterialReceived (Material Int)
     | GameOver String
 
@@ -60,13 +36,13 @@ actionHelp a =
                         (\s ->
                             case s of
                                 "ready" ->
-                                    D.succeed ReadyStage
+                                    D.succeed ReadyStageType
 
                                 "production" ->
-                                    D.succeed ProductionStage
+                                    D.succeed ProductionStageType
 
                                 "auction" ->
-                                    D.succeed AuctionStage
+                                    D.succeed AuctionStageType
 
                                 _ ->
                                     D.fail "Unrecognized stage name"
@@ -77,21 +53,27 @@ actionHelp a =
             D.map Auction <|
                 D.field "seed" D.int
 
-        "auction_winner_updated" ->
-            D.map AuctionWinnerUpdated <|
-                D.field "winner" D.string
+        "bid_updated" ->
+            D.map2 BidUpdated
+                (D.field "bid" D.int)
+                (D.field "winner" D.string)
 
-        "card_granted" ->
-            D.map CardGranted <|
-                D.field "seed" D.int
+        "auction_won" ->
+            D.succeed AuctionWon
 
         "price_updated" ->
             D.map PriceUpdated <|
                 D.field "new_prices" price
 
+        "sale_completed" ->
+            D.map3 SaleCompleted
+                (D.field "quantiy" D.int)
+                (D.field "type" fruit)
+                (D.field "price" D.float)
+
         "material_received" ->
             D.map MaterialReceived <|
-                D.field "material_received" material
+                D.field "material_received" (material D.int)
 
         "game_over" ->
             D.map GameOver <|
@@ -101,18 +83,32 @@ actionHelp a =
             D.fail ("Received unrecognized action from server: " ++ a)
 
 
+fruit : D.Decoder Fruit
+fruit =
+    D.string
+        |> D.andThen
+            (\s ->
+                case fruitFromString s of
+                    Just fruit ->
+                        D.succeed fruit
+
+                    Nothing ->
+                        D.fail "Unrecognized fruit name"
+            )
+
+
 price : D.Decoder Price
 price =
-    D.map4 Price
-        (D.field "blueberry" D.int)
-        (D.field "tomato" D.int)
-        (D.field "corn" D.int)
-        (D.field "purple" D.int)
+    material D.float
 
 
-material : D.Decoder (Material Int)
-material =
-    price
+material : D.Decoder a -> D.Decoder (Material a)
+material a =
+    D.map4 Material
+        (D.field "blueberry" a)
+        (D.field "tomato" a)
+        (D.field "corn" a)
+        (D.field "purple" a)
 
 
 type ServerAction

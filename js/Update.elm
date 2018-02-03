@@ -1,5 +1,6 @@
 module Update exposing (update, subscriptions)
 
+import BaseType exposing (..)
 import Model exposing (..)
 import Msg exposing (..)
 import Api
@@ -129,20 +130,14 @@ tryUpdateProduction model upd =
                 ( model, Cmd.none )
 
 
-tryUpdateAuction :
+updateIfAuction :
     Model
-    -> (AuctionModel -> ( AuctionModel, Cmd Msg ))
+    -> (AuctionModel -> ( Model, Cmd Msg ))
     -> ( Model, Cmd Msg )
-tryUpdateAuction model upd =
+updateIfAuction model upd =
     case model.stage of
         AuctionStage m ->
-            let
-                ( newM, cmd ) =
-                    upd m
-            in
-                ( { model | stage = AuctionStage newM }
-                , cmd
-                )
+            upd m
 
         _ ->
             (Debug.log
@@ -153,6 +148,22 @@ tryUpdateAuction model upd =
                 )
             )
                 ( model, Cmd.none )
+
+
+tryUpdateAuction :
+    Model
+    -> (AuctionModel -> ( AuctionModel, Cmd Msg ))
+    -> ( Model, Cmd Msg )
+tryUpdateAuction model upd =
+    updateIfAuction model <|
+        \m ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = AuctionStage newM }
+                , cmd
+                )
 
 
 handleAction : Api.Action -> Model -> ( Model, Cmd Msg )
@@ -169,21 +180,43 @@ handleAction action model =
                     , Cmd.none
                     )
 
-        Api.AuctionWinnerUpdated winner ->
+        Api.BidUpdated bid winner ->
             tryUpdateAuction model <|
                 \m ->
-                    ( { m | winner = Just winner }, Cmd.none )
+                    ( { m
+                        | highBid = Just bid
+                        , winner = Just winner
+                      }
+                    , Cmd.none
+                    )
 
-        Api.CardGranted seed ->
-            let
-                card =
-                    {- [tmp] bogus card -}
-                    blueberryJam
-            in
-                ( { model | cards = card :: model.cards }, Cmd.none )
+        Api.AuctionWon ->
+            {- display "You Won!" message -}
+            updateIfAuction model <|
+                \m ->
+                    ( case m.card of
+                        Just c ->
+                            { model | cards = c :: model.cards }
+
+                        Nothing ->
+                            model
+                    , Cmd.none
+                    )
 
         Api.PriceUpdated price ->
             ( { model | price = Just price }, Cmd.none )
+
+        Api.SaleCompleted count fruit price ->
+            ( { model
+                | gold = model.gold + floor (price * toFloat count)
+                , inventory =
+                    {- [note] hides negative item error -}
+                    Maybe.map
+                        (updateMaterial fruit (\c -> max 0 (c - count)))
+                        model.inventory
+              }
+            , Cmd.none
+            )
 
         Api.MaterialReceived mat ->
             ( { model
@@ -197,18 +230,18 @@ handleAction action model =
             ( model, Cmd.none )
 
 
-changeStage : Api.GameStage -> Model -> ( Model, Cmd Msg )
+changeStage : StageType -> Model -> ( Model, Cmd Msg )
 changeStage stage model =
     let
         ( newStage, cmd ) =
             case stage of
-                Api.ReadyStage ->
+                ReadyStageType ->
                     ( ReadyStage initReadyModel, Cmd.none )
 
-                Api.ProductionStage ->
+                ProductionStageType ->
                     ( ProductionStage initProductionModel, Cmd.none )
 
-                Api.AuctionStage ->
+                AuctionStageType ->
                     ( AuctionStage initAuctionModel, Cmd.none )
     in
         ( { model
@@ -232,7 +265,7 @@ changeStage stage model =
         )
 
 
-addMaterial : Api.Material Int -> Api.Material Int -> Api.Material Int
+addMaterial : Material Int -> Material Int -> Material Int
 addMaterial m1 m2 =
     { blueberry = m1.blueberry + m2.blueberry
     , tomato = m1.tomato + m2.tomato
