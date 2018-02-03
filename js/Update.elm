@@ -130,20 +130,14 @@ tryUpdateProduction model upd =
                 ( model, Cmd.none )
 
 
-tryUpdateAuction :
+updateIfAuction :
     Model
-    -> (AuctionModel -> ( AuctionModel, Cmd Msg ))
+    -> (AuctionModel -> ( Model, Cmd Msg ))
     -> ( Model, Cmd Msg )
-tryUpdateAuction model upd =
+updateIfAuction model upd =
     case model.stage of
         AuctionStage m ->
-            let
-                ( newM, cmd ) =
-                    upd m
-            in
-                ( { model | stage = AuctionStage newM }
-                , cmd
-                )
+            upd m
 
         _ ->
             (Debug.log
@@ -154,6 +148,22 @@ tryUpdateAuction model upd =
                 )
             )
                 ( model, Cmd.none )
+
+
+tryUpdateAuction :
+    Model
+    -> (AuctionModel -> ( AuctionModel, Cmd Msg ))
+    -> ( Model, Cmd Msg )
+tryUpdateAuction model upd =
+    updateIfAuction model <|
+        \m ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = AuctionStage newM }
+                , cmd
+                )
 
 
 handleAction : Api.Action -> Model -> ( Model, Cmd Msg )
@@ -170,18 +180,28 @@ handleAction action model =
                     , Cmd.none
                     )
 
-        Api.AuctionWinnerUpdated winner ->
+        Api.BidUpdated bid winner ->
             tryUpdateAuction model <|
                 \m ->
-                    ( { m | winner = Just winner }, Cmd.none )
+                    ( { m
+                        | highBid = Just bid
+                        , winner = Just winner
+                      }
+                    , Cmd.none
+                    )
 
-        Api.CardGranted seed ->
-            let
-                card =
-                    {- [tmp] bogus card -}
-                    blueberryJam
-            in
-                ( { model | cards = card :: model.cards }, Cmd.none )
+        Api.AuctionWon ->
+            {- display "You Won!" message -}
+            updateIfAuction model <|
+                \m ->
+                    ( case m.card of
+                        Just c ->
+                            { model | cards = c :: model.cards }
+
+                        Nothing ->
+                            model
+                    , Cmd.none
+                    )
 
         Api.PriceUpdated price ->
             ( { model | price = Just price }, Cmd.none )

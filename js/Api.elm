@@ -8,8 +8,8 @@ import Json.Encode as E
 type Action
     = GameStateChanged StageType
     | Auction CardSeed
-    | AuctionWinnerUpdated String
-    | CardGranted CardSeed
+    | BidUpdated Int String
+    | AuctionWon
     | PriceUpdated Price
     | SaleCompleted Int Fruit Float
     | MaterialReceived (Material Int)
@@ -53,13 +53,13 @@ actionHelp a =
             D.map Auction <|
                 D.field "seed" D.int
 
-        "auction_winner_updated" ->
-            D.map AuctionWinnerUpdated <|
-                D.field "winner" D.string
+        "bid_updated" ->
+            D.map2 BidUpdated
+                (D.field "bid" D.int)
+                (D.field "winner" D.string)
 
-        "card_granted" ->
-            D.map CardGranted <|
-                D.field "seed" D.int
+        "auction_won" ->
+            D.succeed AuctionWon
 
         "price_updated" ->
             D.map PriceUpdated <|
