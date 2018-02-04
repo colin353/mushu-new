@@ -31,6 +31,10 @@ func (u *TestUser) Name() string {
 	return u.name
 }
 
+func (u *TestUser) SetName(name string) {
+	u.name = name
+}
+
 func (u *TestUser) Message(message Message) error {
 	result, err := json.Marshal(message)
 	if err != nil {

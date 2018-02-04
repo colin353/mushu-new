@@ -6,6 +6,7 @@ import Time exposing (Time)
 
 type alias Model =
     { stage : Stage
+    , name : String
     , hostname : String
     , gold : Int
     , inventory : Material Int
@@ -60,6 +61,7 @@ initModel : String -> Model
 initModel hostname =
     { stage = ReadyStage initReadyModel
     , hostname = hostname
+    , name = "Anonymous"
     , gold = 25
     , inventory = emptyMaterial
     , factories = emptyMaterial

@@ -9,6 +9,7 @@ import (
 type User interface {
 	Message(message Message) error
 	Name() string
+	SetName(name string)
 }
 
 // GameConnection holds a list of all the active players, and can be
@@ -68,9 +69,11 @@ func (g *Game) Tick(time time.Duration) {
 
 // RecieveMessage is called when a user sends a message to the server.
 func (g *Game) RecieveMessage(user User, message Message) {
-	switch message.(type) {
+	switch msg := message.(type) {
 	case JoinMessage:
 		user.Message(NewWelcomeMessage(g.name, string(g.state.Name())))
+	case SetNameMessage:
+		user.SetName(msg.Name)
 	}
 	g.state.RecieveMessage(user, message)
 }

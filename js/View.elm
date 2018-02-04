@@ -76,7 +76,9 @@ toolbar m =
 readyView : ReadyModel -> Html ReadyMsg
 readyView m =
     div [ class "card" ]
-        [ div [ class "card-text" ] [ text "Waiting for players..." ]
+        [ div [ class "card-text" ] [ text "Set your name:" ]
+        , input [ placeholder "Anonymous", onInput NameChange ] []
+        , div [ class "card-text" ] [ text "Waiting for players..." ]
         , button [ onClick Ready ] [ text "Ready" ]
         ]
 

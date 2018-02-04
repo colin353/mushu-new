@@ -26,11 +26,10 @@ var upgrader = websocket.Upgrader{
 func join(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	n, ok := params["name"]
-	if !ok {
-		log.Println("Must specify a name in the request URL")
-		return
+	name := "Anonymous"
+	if ok {
+		name = n[0]
 	}
-	name := n[0]
 
 	t, ok := params["game"]
 	var target string
