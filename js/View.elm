@@ -73,7 +73,7 @@ readyView m =
 
 tradeView : TradeModel -> Html TradeMsg
 tradeView m =
-    {- Placeholder for the trading stage. -}
+    {- [tmp] Placeholder for the trading stage. -}
     div [] []
 
 
