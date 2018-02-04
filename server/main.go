@@ -61,5 +61,7 @@ func join(w http.ResponseWriter, r *http.Request) {
 func main() {
 	AllGames = make(map[string]*GameServer)
 	http.HandleFunc("/join", join)
+	http.HandleFunc("/", http.FileServer(http.Dir("./web")).ServeHTTP)
 	log.Fatal(http.ListenAndServe(":8080", nil))
+
 }
