@@ -28,7 +28,7 @@ view model =
 
                     AuctionStage m ->
                         Html.map AuctionMsg (auctionView m model.gold)
-                        
+
                     TradeStage m ->
                         Html.map TradeMsg (tradeView m)
               ]
