@@ -20,5 +20,5 @@ fi
 cd ..
 
 # Build the elm outputs.
-cd js; elm-make Main.elm --output=../web/elm.js; cd ..
+cd js; elm-make Main.elm --yes --output=../web/elm.js; cd ..
 
