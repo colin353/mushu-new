@@ -21,8 +21,7 @@ type ReadyMsg
 
 
 type TradeMsg
-    = -- [tmp]
-      Trade
+    = Yield
 
 
 type ProductionMsg

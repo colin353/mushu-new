@@ -20,6 +20,12 @@ subscriptions model =
     Sub.batch
         [ WebSocket.listen wsUrl ServerMsgReceived
         , AnimationFrame.times AnimationFrame
+        , case model.stage of
+            TradeStage _ ->
+                Time.every Time.second (TradeMsg << always Yield)
+
+            _ ->
+                Sub.none
         ]
 
 
@@ -38,11 +44,28 @@ update msg model =
             tryUpdateProduction model (updateProduction msg)
 
         AuctionMsg msg ->
-            tryUpdateAuction model (updateAuction msg)
+            tryUpdateAuction (updateAuction msg) model
 
-        {- [tmp] does nothing now -}
         TradeMsg msg ->
-            ( model, Cmd.none )
+            updateIfTrade
+                (\_ model ->
+                    case msg of
+                        Yield ->
+                            ( { model
+                                | inventory =
+                                    mapMaterial
+                                        (\fr ->
+                                            (+)
+                                                (lookupMaterial fr
+                                                    (yieldRate model.factories)
+                                                )
+                                        )
+                                        model.inventory
+                              }
+                            , Cmd.none
+                            )
+                )
+                model
 
         Input newInput ->
             ( { model | input = newInput }, Cmd.none )
@@ -107,7 +130,10 @@ update msg model =
             )
 
 
-updateProduction : ProductionMsg -> ProductionModel -> ( ProductionModel, Cmd Msg )
+updateProduction :
+    ProductionMsg
+    -> ProductionModel
+    -> ( ProductionModel, Cmd Msg )
 updateProduction msg m =
     case msg of
         FactorySelected fr ->
@@ -168,18 +194,19 @@ tryUpdateProduction model upd =
                     ++ " during "
                     ++ toString model.stage
                 )
+                identity
             )
                 ( model, Cmd.none )
 
 
 updateIfAuction :
-    Model
-    -> (AuctionModel -> ( Model, Cmd Msg ))
+    (AuctionModel -> Model -> ( Model, Cmd Msg ))
+    -> Model
     -> ( Model, Cmd Msg )
-updateIfAuction model upd =
+updateIfAuction upd model =
     case model.stage of
         AuctionStage m ->
-            upd m
+            upd m model
 
         _ ->
             (Debug.log
@@ -193,12 +220,12 @@ updateIfAuction model upd =
 
 
 tryUpdateAuction :
-    Model
-    -> (AuctionModel -> ( AuctionModel, Cmd Msg ))
+    (AuctionModel -> ( AuctionModel, Cmd Msg ))
+    -> Model
     -> ( Model, Cmd Msg )
-tryUpdateAuction model upd =
-    updateIfAuction model <|
-        \m ->
+tryUpdateAuction upd =
+    updateIfAuction <|
+        \m model ->
             let
                 ( newM, cmd ) =
                     upd m
@@ -206,6 +233,44 @@ tryUpdateAuction model upd =
                 ( { model | stage = AuctionStage newM }
                 , cmd
                 )
+
+
+updateIfTrade :
+    (TradeModel -> Model -> ( Model, Cmd Msg ))
+    -> Model
+    -> ( Model, Cmd Msg )
+updateIfTrade upd model =
+    case model.stage of
+        TradeStage m ->
+            upd m model
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model.stage
+                )
+                identity
+            )
+                ( model, Cmd.none )
+
+
+tryUpdateTrade :
+    (TradeModel -> ( TradeModel, Cmd Msg ))
+    -> Model
+    -> ( Model, Cmd Msg )
+tryUpdateTrade upd =
+    updateIfTrade
+        (\m model ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = TradeStage newM }
+                , cmd
+                )
+        )
 
 
 handleAction : Api.Action -> Model -> ( Model, Cmd Msg )
@@ -216,8 +281,8 @@ handleAction action model =
             changeStage stage model
 
         Api.Auction seed ->
-            tryUpdateAuction model <|
-                \m ->
+            tryUpdateAuction
+                (\m ->
                     ( { m
                         | auction =
                             Just
@@ -229,10 +294,12 @@ handleAction action model =
                       }
                     , Cmd.none
                     )
+                )
+                model
 
         Api.BidUpdated bid winner ->
-            tryUpdateAuction model <|
-                \m ->
+            tryUpdateAuction
+                (\m ->
                     ( { m
                         | auction =
                             Maybe.map
@@ -249,14 +316,16 @@ handleAction action model =
                       }
                     , Cmd.none
                     )
+                )
+                model
 
         Api.Welcome ->
             ( model, Cmd.none )
 
         Api.AuctionWon ->
             {- display "You Won!" message -}
-            updateIfAuction model <|
-                \m ->
+            updateIfAuction
+                (\m model ->
                     ( case m.auction of
                         Just a ->
                             { model
@@ -268,7 +337,8 @@ handleAction action model =
                                                 bid
 
                                             Nothing ->
-                                                Debug.crash "You won for free (???)"
+                                                Debug.crash
+                                                    "You won for free (???)"
                                           )
                             }
 
@@ -276,6 +346,8 @@ handleAction action model =
                             model
                     , Cmd.none
                     )
+                )
+                model
 
         Api.PriceUpdated price ->
             ( { model | price = Just price }, Cmd.none )
@@ -285,8 +357,8 @@ handleAction action model =
                 | gold = model.gold + floor (price * toFloat count)
                 , inventory =
                     {- [note] hides negative item error -}
-                    Maybe.map
-                        (updateMaterial fruit (\c -> max 0 (c - count)))
+                    updateMaterial fruit
+                        (\c -> max 0 (c - count))
                         model.inventory
               }
             , Cmd.none
@@ -295,7 +367,7 @@ handleAction action model =
         Api.MaterialReceived mat ->
             ( { model
                 | inventory =
-                    Maybe.map (addMaterial mat) model.inventory
+                    mapMaterial2 (always (*)) mat model.inventory
               }
             , Cmd.none
             )
@@ -340,12 +412,3 @@ changeStage stage model =
           }
         , cmd
         )
-
-
-addMaterial : Material Int -> Material Int -> Material Int
-addMaterial m1 m2 =
-    { blueberry = m1.blueberry + m2.blueberry
-    , tomato = m1.tomato + m2.tomato
-    , corn = m1.corn + m2.corn
-    , purple = m1.purple + m2.purple
-    }

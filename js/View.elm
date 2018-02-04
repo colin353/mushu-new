@@ -9,6 +9,7 @@ import Html.Events exposing (..)
 import Time
 
 
+bidIncrement : number
 bidIncrement =
     5
 
@@ -33,13 +34,7 @@ view model =
                         Html.map TradeMsg (tradeView m)
               ]
             , if model.inventoryVisible then
-                case model.inventory of
-                    Just mat ->
-                        [ inventoryView mat ]
-
-                    {- [todo] handle case -}
-                    Nothing ->
-                        []
+                [ inventoryView model.inventory ]
               else
                 []
             , [ toolbar model

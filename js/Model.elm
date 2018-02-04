@@ -7,7 +7,7 @@ import Time exposing (Time)
 type alias Model =
     { stage : Stage
     , gold : Int
-    , inventory : Maybe (Material Int)
+    , inventory : Material Int
     , factories : Material Int
     , cards : List Card
     , price : Maybe Price
@@ -58,7 +58,7 @@ initModel : Model
 initModel =
     { stage = ReadyStage initReadyModel
     , gold = 25
-    , inventory = Just emptyMaterial
+    , inventory = emptyMaterial
     , factories = emptyMaterial
     , cards = []
     , price = Nothing
@@ -86,6 +86,16 @@ initTradeModel =
 initAuctionModel : AuctionModel
 initAuctionModel =
     { auction = Nothing }
+
+
+baseYieldRate : number
+baseYieldRate =
+    1
+
+
+yieldRate : Material Int -> Material Int
+yieldRate =
+    mapMaterial (always ((*) baseYieldRate))
 
 
 
