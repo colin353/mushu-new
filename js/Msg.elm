@@ -19,7 +19,9 @@ type ReadyMsg
 
 
 type TradeMsg
-    = Trade
+    = 
+    -- [tmp]
+    Trade
 
 
 type ProductionMsg
