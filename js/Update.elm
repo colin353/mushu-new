@@ -35,6 +35,9 @@ update msg model =
         AuctionMsg msg ->
             tryUpdateAuction model (updateAuction msg)
 
+        TradeMsg msg ->
+            ( model, Cmd.none )
+
         Input newInput ->
             ( { model | input = newInput }, Cmd.none )
 
@@ -246,6 +249,9 @@ changeStage stage model =
 
                 AuctionStageType ->
                     ( AuctionStage initAuctionModel, Cmd.none )
+
+                TradeStageType ->
+                    ( TradeStage initTradeModel, Cmd.none )
     in
         ( { model
             | stage = newStage

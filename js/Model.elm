@@ -20,6 +20,7 @@ type Stage
     = ReadyStage ReadyModel
     | ProductionStage ProductionModel
     | AuctionStage AuctionModel
+    | TradeStage TradeModel
 
 
 type alias ReadyModel =
@@ -37,6 +38,10 @@ type alias AuctionModel =
     , highBid : Maybe Int
     , clock : Int
     }
+
+
+type alias TradeModel =
+    ()
 
 
 initModel : Model
@@ -61,6 +66,11 @@ initReadyModel =
 initProductionModel : ProductionModel
 initProductionModel =
     { selected = Nothing }
+
+
+initTradeModel : TradeModel
+initTradeModel =
+    ()
 
 
 initAuctionModel : AuctionModel
