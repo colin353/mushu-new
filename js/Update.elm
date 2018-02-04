@@ -5,6 +5,7 @@ import Model exposing (..)
 import Msg exposing (..)
 import Api
 import WebSocket
+import AnimationFrame
 import Debug
 
 
@@ -15,7 +16,10 @@ wsUrl =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    WebSocket.listen wsUrl ServerMsgReceived
+    Sub.batch
+        [ WebSocket.listen wsUrl ServerMsgReceived
+        , AnimationFrame.times AnimationFrame
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -61,6 +65,25 @@ update msg model =
 
         ToggleInventory ->
             ( { model | inventoryVisible = not model.inventoryVisible }
+            , Cmd.none
+            )
+
+        AnimationFrame tick ->
+            ( { model
+                | stage =
+                    case model.stage of
+                        ReadyStage m ->
+                            {- [todo] add timer -}
+                            ReadyStage m
+
+                        ProductionStage m ->
+                            {- [todo] add timer -}
+                            ProductionStage m
+
+                        AuctionStage m ->
+                            AuctionStage
+                                { m | timer = updateTimer tick m.timer }
+              }
             , Cmd.none
             )
 
@@ -189,6 +212,9 @@ handleAction action model =
                       }
                     , Cmd.none
                     )
+
+        Api.Welcome ->
+            ( model, Cmd.none )
 
         Api.AuctionWon ->
             {- display "You Won!" message -}

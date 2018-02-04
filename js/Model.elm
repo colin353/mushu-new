@@ -1,6 +1,7 @@
 module Model exposing (..)
 
 import BaseType exposing (..)
+import Time exposing (Time)
 
 
 type alias Model =
@@ -35,7 +36,7 @@ type alias AuctionModel =
     { card : Maybe Card
     , winner : Maybe String
     , highBid : Maybe Int
-    , clock : Int
+    , timer : Timer
     }
 
 
@@ -43,7 +44,7 @@ initModel : Model
 initModel =
     { stage = ReadyStage initReadyModel
     , gold = 0
-    , inventory = Nothing
+    , inventory = Just emptyMaterial
     , factories = emptyMaterial
     , cards = []
     , price = Nothing
@@ -68,5 +69,79 @@ initAuctionModel =
     { card = Nothing
     , winner = Nothing
     , highBid = Nothing
-    , clock = 60 {- [tmp] bogus value -}
+    , timer = startTimer (60 * Time.second)
     }
+
+
+
+-- TIMER
+
+
+type Timer
+    = Paused
+        { lastTick : Maybe Time
+        , timeLeft : Time
+        }
+    | Running
+        { lastTick : Maybe Time
+        , timeLeft : Time
+        }
+    | Done
+
+
+startTimer : Time -> Timer
+startTimer start =
+    Running
+        { lastTick = Nothing
+        , timeLeft = start
+        }
+
+
+updateTimer : Time -> Timer -> Timer
+updateTimer tick timer =
+    case timer of
+        Paused rec ->
+            Paused { rec | lastTick = Just tick }
+
+        Running rec ->
+            if rec.timeLeft < 0 then
+                Done
+            else
+                let
+                    lastTick =
+                        Maybe.withDefault tick rec.lastTick
+                in
+                    Running
+                        { rec
+                            | lastTick = Just tick
+                            , timeLeft = rec.timeLeft - (tick - lastTick)
+                        }
+
+        Done ->
+            timer
+
+
+timeLeft : Timer -> Time
+timeLeft timer =
+    case timer of
+        Paused { timeLeft } ->
+            timeLeft
+
+        Running { timeLeft } ->
+            timeLeft
+
+        Done ->
+            0
+
+
+resumeTimer : Timer -> Timer -> Timer
+resumeTimer tick timer =
+    case timer of
+        Paused record ->
+            Running record
+
+        Running record ->
+            Running record
+
+        Done ->
+            Done

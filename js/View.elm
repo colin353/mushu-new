@@ -6,6 +6,7 @@ import Msg exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Time
 
 
 view : Model -> Html Msg
@@ -103,7 +104,17 @@ auctionView m =
             Just c ->
                 div [] <|
                     List.map (div [] << List.singleton) <|
-                        [ text "Currently Bidding on:"
+                        [ text
+                            ("Time left: "
+                                ++ (toString
+                                        << floor
+                                        << Time.inSeconds
+                                        << timeLeft
+                                    <|
+                                        m.timer
+                                   )
+                            )
+                        , text "Currently Bidding on:"
                         , text c.name
                         , text <|
                             case m.highBid of

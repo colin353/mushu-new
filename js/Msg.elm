@@ -1,6 +1,7 @@
 module Msg exposing (..)
 
 import BaseType exposing (..)
+import Time exposing (Time)
 
 
 type Msg
@@ -11,6 +12,7 @@ type Msg
     | MsgServer
     | ServerMsgReceived String
     | ToggleInventory
+    | AnimationFrame Time
 
 
 type ReadyMsg

@@ -9,6 +9,7 @@ type Action
     = GameStateChanged StageType
     | Auction CardSeed
     | BidUpdated Int String
+    | Welcome
     | AuctionWon
     | PriceUpdated Price
     | SaleCompleted Int Fruit Float
