@@ -8,6 +8,7 @@ type Msg
     = ReadyMsg ReadyMsg
     | ProductionMsg ProductionMsg
     | AuctionMsg AuctionMsg
+    | TradeMsg TradeMsg
     | Input String
     | MsgServer
     | ServerMsgReceived String
@@ -17,6 +18,11 @@ type Msg
 
 type ReadyMsg
     = Ready
+
+
+type TradeMsg
+    = -- [tmp]
+      Trade
 
 
 type ProductionMsg

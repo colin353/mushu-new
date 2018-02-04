@@ -28,6 +28,9 @@ view model =
 
                     AuctionStage m ->
                         Html.map AuctionMsg (auctionView m model.gold)
+                        
+                    TradeStage m ->
+                        Html.map TradeMsg (tradeView m)
               ]
             , if model.inventoryVisible then
                 case model.inventory of
@@ -75,6 +78,12 @@ readyView : ReadyModel -> Html ReadyMsg
 readyView m =
     div []
         [ button [ onClick Ready ] [ text "Ready" ] ]
+
+
+tradeView : TradeModel -> Html TradeMsg
+tradeView m =
+    {- [tmp] Placeholder for the trading stage. -}
+    div [] []
 
 
 productionView : Material Int -> ProductionModel -> Html ProductionMsg

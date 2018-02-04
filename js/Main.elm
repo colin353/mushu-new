@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import Model exposing (Model)
 import Msg
