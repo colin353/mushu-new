@@ -100,50 +100,47 @@ productionView factories m =
 auctionView : AuctionModel -> Html AuctionMsg
 auctionView m =
     div []
-        [ case m.card of
-            Just c ->
+        [ case m.auction of
+            Just a ->
                 div [] <|
                     List.map (div [] << List.singleton) <|
-                        [ text
-                            ("Time left: "
-                                ++ (toString
-                                        << floor
-                                        << Time.inSeconds
-                                        << timeLeft
-                                    <|
-                                        m.timer
-                                   )
-                            )
-                        , text "Currently Bidding on:"
-                        , text c.name
-                        , text <|
-                            case m.highBid of
-                                Just x ->
-                                    "Highest Bid: " ++ toString x
+                        List.concat <|
+                            [ [ text
+                                    ("Time left: "
+                                        ++ (toString
+                                                << floor
+                                                << Time.inSeconds
+                                                << timeLeft
+                                            <|
+                                                a.timer
+                                           )
+                                    )
+                              , text "Currently Bidding on:"
+                              , text a.card.name
+                              ]
+                            , case a.highestBid of
+                                Just { bidder, bid } ->
+                                    [ text <| "Highest Bid: " ++ toString bid
+                                    , text <| "Highest Bidder: " ++ bidder
+                                    ]
 
                                 Nothing ->
-                                    "No highest bid"
-                        , text <|
-                            case m.winner of
-                                Just w ->
-                                    "Highest Bidder: " ++ w
+                                    [ text "No one bid yet" ]
+                            , [ button [ onClick Msg.Bid ]
+                                    [ text <|
+                                        "Bid: "
+                                            ++ toString
+                                                {- [tofix] duplicate -}
+                                                (case a.highestBid of
+                                                    Just { bid } ->
+                                                        bid + 5
 
-                                Nothing ->
-                                    "No highest bidder"
-                        , button [ onClick Bid ]
-                            [ text <|
-                                "Bid: "
-                                    ++ toString
-                                        {- [tofix] duplicate -}
-                                        (case m.highBid of
-                                            Just x ->
-                                                x + 5
-
-                                            Nothing ->
-                                                c.startingBid
-                                        )
+                                                    Nothing ->
+                                                        a.card.startingBid
+                                                )
+                                    ]
+                              ]
                             ]
-                        ]
 
             Nothing ->
                 text "No Cards in Auction"

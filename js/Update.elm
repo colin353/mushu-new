@@ -6,6 +6,7 @@ import Msg exposing (..)
 import Api
 import WebSocket
 import AnimationFrame
+import Time exposing (Time)
 import Debug
 
 
@@ -82,7 +83,18 @@ update msg model =
 
                         AuctionStage m ->
                             AuctionStage
-                                { m | timer = updateTimer tick m.timer }
+                                { m
+                                    | auction =
+                                        Maybe.map
+                                            (\a ->
+                                                { a
+                                                    | timer =
+                                                        updateTimer tick
+                                                            a.timer
+                                                }
+                                            )
+                                            m.auction
+                                }
               }
             , Cmd.none
             )
@@ -106,14 +118,14 @@ updateAuction msg m =
                 (Api.encodeToMessage
                     (Api.Bid
                         {- [tofix] duplicate -}
-                        (case m.card of
-                            Just c ->
-                                case m.highBid of
-                                    Just x ->
-                                        x + 5
+                        (case m.auction of
+                            Just a ->
+                                case a.highestBid of
+                                    Just { bid } ->
+                                        bid + 5
 
                                     Nothing ->
-                                        c.startingBid
+                                        a.card.startingBid
 
                             Nothing ->
                                 Debug.crash
@@ -199,7 +211,15 @@ handleAction action model =
         Api.Auction seed ->
             tryUpdateAuction model <|
                 \m ->
-                    ( { m | card = {- [tmp] bogus card -} Just blueberryJam }
+                    ( { m
+                        | auction =
+                            Just
+                                { -- [tmp] bogus card
+                                  card = blueberryJam
+                                , highestBid = Nothing
+                                , timer = startTimer (60 * Time.second)
+                                }
+                      }
                     , Cmd.none
                     )
 
@@ -207,8 +227,18 @@ handleAction action model =
             tryUpdateAuction model <|
                 \m ->
                     ( { m
-                        | highBid = Just bid
-                        , winner = Just winner
+                        | auction =
+                            Maybe.map
+                                (\a ->
+                                    { a
+                                        | highestBid =
+                                            Just
+                                                { bidder = winner
+                                                , bid = bid
+                                                }
+                                    }
+                                )
+                                m.auction
                       }
                     , Cmd.none
                     )
@@ -220,9 +250,9 @@ handleAction action model =
             {- display "You Won!" message -}
             updateIfAuction model <|
                 \m ->
-                    ( case m.card of
-                        Just c ->
-                            { model | cards = c :: model.cards }
+                    ( case m.auction of
+                        Just a ->
+                            { model | cards = a.card :: model.cards }
 
                         Nothing ->
                             model

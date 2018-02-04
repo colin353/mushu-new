@@ -33,10 +33,19 @@ type alias ProductionModel =
 
 
 type alias AuctionModel =
-    { card : Maybe Card
-    , winner : Maybe String
-    , highBid : Maybe Int
+    { auction : Maybe Auction }
+
+
+type alias Auction =
+    { card : Card
+    , highestBid : Maybe Bid
     , timer : Timer
+    }
+
+
+type alias Bid =
+    { bidder : String
+    , bid : Int
     }
 
 
@@ -66,11 +75,7 @@ initProductionModel =
 
 initAuctionModel : AuctionModel
 initAuctionModel =
-    { card = Nothing
-    , winner = Nothing
-    , highBid = Nothing
-    , timer = startTimer (60 * Time.second)
-    }
+    { auction = Nothing }
 
 
 
