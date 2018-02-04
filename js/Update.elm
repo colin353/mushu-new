@@ -35,6 +35,7 @@ update msg model =
         AuctionMsg msg ->
             tryUpdateAuction model (updateAuction msg)
 
+        {- [tmp] does nothing now -}
         TradeMsg msg ->
             ( model, Cmd.none )
 
