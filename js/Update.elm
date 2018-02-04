@@ -85,6 +85,9 @@ update msg model =
                             {- [todo] add timer -}
                             ProductionStage m
 
+                        TradeStage m ->
+                            TradeStage m
+
                         AuctionStage m ->
                             AuctionStage
                                 { m
