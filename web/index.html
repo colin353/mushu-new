@@ -1,8 +1,14 @@
-<div id="main"></div>
-<script src="/elm.js"></script>
-<script>
-  var node = document.getElementById('main');
-  var app = Elm.Main.embed(node, {
-    hostname: window.location.host
-  });
-</script>
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="style.css">
+
+<body>
+    <div id="main"></div>
+    <script src="/elm.js"></script>
+    <script>
+        var node = document.getElementById('main');
+        var app = Elm.Main.embed(node, {
+            hostname: window.location.host
+        });
+    </script>
+</body>

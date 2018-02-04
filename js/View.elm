@@ -16,9 +16,19 @@ bidIncrement =
 
 view : Model -> Html Msg
 view model =
-    div [] <|
+    div [ class "view" ] <|
         List.concat
-            [ [ div [] (List.map viewMessage model.messages)
+            [ [ div [ class "heading" ] [ text "mushu: test" ] ]
+            , if model.inventoryVisible then
+                [ inventoryView model.inventory ]
+              else
+                []
+            , [ toolbar model
+              , div []
+                    [ text ("$" ++ (toString model.gold))
+                    ]
+              ]
+            , [ div [] []
               , case model.stage of
                     ReadyStage m ->
                         Html.map ReadyMsg (readyView m)
@@ -32,15 +42,6 @@ view model =
 
                     TradeStage m ->
                         Html.map TradeMsg (tradeView model.inventory m)
-              ]
-            , if model.inventoryVisible then
-                [ inventoryView model.inventory ]
-              else
-                []
-            , [ toolbar model
-              , div []
-                    [ text ("$" ++ (toString model.gold))
-                    ]
               ]
             ]
 
