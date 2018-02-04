@@ -28,7 +28,7 @@ jobs:
       
     working_directory: /go/src/github.com/colin353/mushu-new
     steps:
-      - run: checkout
+      - checkout
       - run: ./build.sh --release
       - run: docker build -t colinmerkel/mushu .
       - run: docker push colinmerkel/mushu
