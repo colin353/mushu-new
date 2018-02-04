@@ -71,7 +71,7 @@ func (s *GameServer) Broadcast(message Message) error {
 // AddPlayer is called by the main thread to add a player to our game. In fact, it
 // queues a JoinMessage from this new player, which our game thread picks up.
 func (s *GameServer) AddPlayer(player Player) {
-	log.Printf("Adding new player %q to game %q", player.Name, s.game.name)
+	log.Printf("Adding new player %q to game %q", player.Name(), s.game.name)
 
 	s.incomingMessages <- NewEvent(&player, NewJoinMessage())
 }

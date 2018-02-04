@@ -1,0 +1,22 @@
+# Golang CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-go/ for more details
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version
+      - image: colinmerkel/mushu-ci:latest
+      
+    working_directory: /go/src/github.com/colin353/mushu-new
+    steps:
+      - checkout
+
+        # Run go tests.
+      - run: cd server; go get -v -t -d ./...
+      - run: cd server; go test -v ./...
+
+        # Make sure the formatting is right.
+      - run: cd js; elm-format --validate *.elm
+        # Try to build the elm code.
+      - run: cd js; elm make --yes Main.elm

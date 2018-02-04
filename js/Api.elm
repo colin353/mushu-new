@@ -7,9 +7,9 @@ import Json.Encode as E
 
 type Action
     = GameStateChanged StageType
+    | Welcome
     | Auction CardSeed
     | BidUpdated Int String
-    | Welcome
     | AuctionWon
     | PriceUpdated Price
     | SaleCompleted Int Fruit Float
@@ -49,6 +49,9 @@ actionHelp a =
                                     D.fail "Unrecognized stage name"
                         )
                 )
+
+        "welcome" ->
+            D.succeed Welcome
 
         "auction_seed" ->
             D.map Auction <|
