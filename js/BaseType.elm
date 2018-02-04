@@ -5,6 +5,7 @@ type StageType
     = ReadyStageType
     | ProductionStageType
     | AuctionStageType
+    | TradeStageType
 
 
 type alias CardSeed =
