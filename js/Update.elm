@@ -16,10 +16,12 @@ subscriptions model =
     Sub.batch
         [ Server.listen model ServerMsgReceived
         , AnimationFrame.times AnimationFrame
-        , Shake.shake (always Shake)
         , case model.stage of
             TradeStage _ ->
-                Time.every Time.second (TradeMsg << always Yield)
+                Sub.batch
+                    [ Shake.shake (always Shake)
+                    , Time.every Time.second (TradeMsg << always Yield)
+                    ]
 
             _ ->
                 Sub.none
