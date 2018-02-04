@@ -80,6 +80,46 @@ update msg model =
                         )
                         model
 
+                SellButton fruit ->
+                    case model.price of
+                        Just price ->
+                            ( { model
+                                | gold =
+                                    model.gold
+                                        + floor (lookupMaterial fruit price)
+                                , inventory =
+                                    case
+                                        tryUpdateMaterial fruit
+                                            (\x ->
+                                                let
+                                                    newX =
+                                                        x - 1
+                                                in
+                                                    if newX >= 0 then
+                                                        Just newX
+                                                    else
+                                                        Nothing
+                                            )
+                                            model.inventory
+                                    of
+                                        Nothing ->
+                                            Debug.crash
+                                                ("""Not enough item to sell.
+                                                    Sell button should've
+                                                    been disabled.""")
+
+                                        Just inv ->
+                                            inv
+                              }
+                            , Server.send model (Api.Sell fruit 1)
+                            )
+
+                        Nothing ->
+                            Debug.crash
+                                ("No price information."
+                                    ++ "Sell button should have been disabled."
+                                )
+
         ServerMsgReceived action ->
             case action of
                 Ok action ->
