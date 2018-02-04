@@ -1,4 +1,10 @@
-module Api exposing (..)
+module Api
+    exposing
+        ( Action(..)
+        , ServerAction(..)
+        , decodeMessage
+        , encodeToMessage
+        )
 
 import BaseType exposing (..)
 import Json.Decode as D
