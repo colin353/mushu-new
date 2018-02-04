@@ -8,6 +8,7 @@ mkdir -p bin/
 # Build the Go binary.
 
 cd server; 
+go get -v -t -d ./...
 if [ $# -eq 0 ]
   then
     echo "Building for debug..."
