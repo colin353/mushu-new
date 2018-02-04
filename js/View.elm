@@ -167,7 +167,7 @@ auctionView m gold =
 cantBid : Maybe Bid -> Int -> Bool
 cantBid bid gold =
     case bid of
-        Just { bidder, bid } ->
+        Just { bid } ->
             bid + bidIncrement > gold
 
         Nothing ->
