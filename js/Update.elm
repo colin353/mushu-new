@@ -252,7 +252,18 @@ handleAction action model =
                 \m ->
                     ( case m.auction of
                         Just a ->
-                            { model | cards = a.card :: model.cards }
+                            { model
+                                | cards = a.card :: model.cards
+                                , gold =
+                                    model.gold
+                                        - (case a.highestBid of
+                                            Just { bid } ->
+                                                bid
+
+                                            Nothing ->
+                                                Debug.crash "You won for free (???)"
+                                          )
+                            }
 
                         Nothing ->
                             model
