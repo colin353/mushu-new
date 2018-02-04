@@ -4,16 +4,25 @@ body {
     padding: 0;
     margin: 0;
 
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .view {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 50px auto 150px;
     grid-gap: 10px;
-    grid-auto-rows: minmax(50px, auto);
+    height: 100%;
 }
 
 .heading {
+    padding-top: 10px;
+    color: white;
     grid-column: 1 / 4;
     grid-row: 1;
     display: block;
@@ -22,7 +31,45 @@ body {
     background-color: green;
 }
 
+.card {
+    display: flex;
+    flex-direction: column;
+    background-color: yellow;
+    border-radius: 5px;
+    margin-left: 10px;
+    margin-right: 10px;
+    padding: 10px;
+}
+
+.card-text {
+    text-align: center;
+}
+
+.card button {
+    background-color: blue;
+    border: 3px solid pink;
+    border-radius: 5px;
+    width: 150px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+    color: white;
+}
+
 .active-state {
-    display: block;
-    height:
+    grid-column: 1 / 4;
+    grid-row: 2;
+    padding: 10px;
+}
+
+.tray {
+    grid-column: 1/4;
+    grid-row: 3;
+    display: flex;
+    flex-direction: column;
+    background-color: grey;
+    padding: 10px;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-bottom: 10px;
 }
