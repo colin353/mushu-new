@@ -26,12 +26,13 @@ const (
 	SaleCompletedAction  MessageAction = "sale_completed"
 
 	// Client messages
-	BidAction   MessageAction = "bid"
-	ReadyAction MessageAction = "ready"
-	JoinAction  MessageAction = "join"
-	LeaveAction MessageAction = "leave"
-	TradeAction MessageAction = "trade"
-	SellAction  MessageAction = "sell"
+	BidAction     MessageAction = "bid"
+	ReadyAction   MessageAction = "ready"
+	JoinAction    MessageAction = "join"
+	LeaveAction   MessageAction = "leave"
+	TradeAction   MessageAction = "trade"
+	SellAction    MessageAction = "sell"
+	SetNameAction MessageAction = "set_name"
 
 	// Special debug-only actions
 	TickAction MessageAction = "tick"
@@ -242,6 +243,18 @@ func NewSellMessage(t CommodityType, quantity int64) SellMessage {
 	}
 }
 
+type SetNameMessage struct {
+	Action string `json:"action"`
+	Name   string `json:"name"`
+}
+
+func NewSetNameMessage(name string) SetNameMessage {
+	return SetNameMessage{
+		Action: string(SetNameAction),
+		Name:   name,
+	}
+}
+
 // DecodeMessage takes data in bytes, determines which message it corresponds
 // to, and decodes it to the appropriate type.
 func DecodeMessage(data []byte) (Message, error) {
@@ -305,6 +318,10 @@ func DecodeMessage(data []byte) (Message, error) {
 		message = m
 	case string(SaleCompletedAction):
 		m := SaleCompletedMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(SetNameAction):
+		m := SetNameMessage{}
 		err = json.Unmarshal(data, &m)
 		message = m
 	default:

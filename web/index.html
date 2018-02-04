@@ -5,36 +5,28 @@
 <body>
     <div id="main"></div>
     <script src="/elm.js"></script>
+    <script src="/shake.js"></script>
     <script>
         var node = document.getElementById('main');
-        var app = Elm.Main.embed(node, {
+        window.app = Elm.Main.embed(node, {
             hostname: window.location.host
         });
+
+        var shake = new Shake({
+            threshold: 15,
+            timeout: 1000
+        }).start();
+
+        function trySubscribeShake() {
+            setTimeout(() => {
+                if (window.app.hasOwnProperty("ports")) {
+                    window.addEventListener('shake', () => window.app.ports.shake.send(null));
+                } else {
+                    trySubscribeShake();
+                }
+            }, 100);
+        }
+
+        trySubscribeShake();
     </script>
 </body>
-<div id="main"></div>
-<script src="/elm.js"></script>
-<script src="/shake.js"></script>
-<script>
-    var node = document.getElementById('main');
-    window.app = Elm.Main.embed(node, {
-        hostname: window.location.host
-    });
-
-    var shake = new Shake({
-        threshold: 15,
-        timeout: 1000
-    }).start();
-
-    function trySubscribeShake() {
-        setTimeout(() => {
-            if (window.app.hasOwnProperty("ports")) {
-                window.addEventListener('shake', () => window.app.ports.shake.send(null));
-            } else {
-                trySubscribeShake();
-            }
-        }, 100);
-    }
-
-    trySubscribeShake();
-</script>

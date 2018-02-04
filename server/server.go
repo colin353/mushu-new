@@ -23,6 +23,10 @@ func (p *Player) Name() string {
 	return p.name
 }
 
+func (p *Player) SetName(name string) {
+	p.name = name
+}
+
 // Message sends a player a message.
 func (p *Player) Message(message Message) error {
 	return p.Connection.WriteJSON(message)
@@ -86,19 +90,19 @@ func (s *GameServer) HandleCommunication(player Player) {
 	for {
 		t, data, err := player.Connection.ReadMessage()
 		if err != nil {
-			log.Printf("Websocket[name=%v] read error: %v", player.Name, err)
+			log.Printf("Websocket[name=%v] read error: %v", player.Name(), err)
 			s.incomingMessages <- NewEvent(&player, NewLeaveMessage())
 			return
 		}
 
 		if t != websocket.TextMessage {
-			log.Printf("Websocket[name=%v] sent binary message", player.Name)
+			log.Printf("Websocket[name=%v] sent binary message", player.Name())
 		}
 
 		msg, err := DecodeMessage(data)
-		log.Printf("Player[name=%v] sent message: %v", player.Name, msg)
+		log.Printf("Player[name=%v] sent message: %v", player.Name(), msg)
 		if err != nil {
-			log.Printf("Websocket[name=%v] sent invalid message: %v", player.Name, err)
+			log.Printf("Websocket[name=%v] sent invalid message: %v", player.Name(), err)
 		}
 		s.incomingMessages <- NewEvent(&player, msg)
 	}
