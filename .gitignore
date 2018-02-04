@@ -30,5 +30,8 @@ mushunew
 mushu-new
 server/server
 
+# The compiled elm output
+web/index.html
+
 # No compiled output
 *elm.js
