@@ -9,6 +9,10 @@ import Html.Events exposing (..)
 import Time
 
 
+bidIncrement =
+    5
+
+
 view : Model -> Html Msg
 view model =
     div [] <|
@@ -23,7 +27,7 @@ view model =
                             (productionView model.factories m)
 
                     AuctionStage m ->
-                        Html.map AuctionMsg (auctionView m)
+                        Html.map AuctionMsg (auctionView m model.gold)
               ]
             , if model.inventoryVisible then
                 case model.inventory of
@@ -38,6 +42,10 @@ view model =
             , [ toolbar model
               , input [ value model.input, onInput Input ] []
               , button [ onClick MsgServer ] [ text "Send" ]
+              ]
+            , [ div []
+                    [ text ("$" ++ (toString model.gold))
+                    ]
               ]
             ]
 
@@ -97,8 +105,8 @@ productionView factories m =
             allFruits
 
 
-auctionView : AuctionModel -> Html AuctionMsg
-auctionView m =
+auctionView : AuctionModel -> Int -> Html AuctionMsg
+auctionView m gold =
     div []
         [ case m.auction of
             Just a ->
@@ -126,14 +134,14 @@ auctionView m =
 
                                 Nothing ->
                                     [ text "No one bid yet" ]
-                            , [ button [ onClick Msg.Bid ]
+                            , [ button [ onClick Msg.Bid, disabled (cantBid a.highestBid gold) ]
                                     [ text <|
                                         "Bid: "
                                             ++ toString
                                                 {- [tofix] duplicate -}
                                                 (case a.highestBid of
                                                     Just { bid } ->
-                                                        bid + 5
+                                                        bid + bidIncrement
 
                                                     Nothing ->
                                                         a.card.startingBid
@@ -145,6 +153,16 @@ auctionView m =
             Nothing ->
                 text "No Cards in Auction"
         ]
+
+
+cantBid : Maybe Bid -> Int -> Bool
+cantBid bid gold =
+    case bid of
+        Just { bidder, bid } ->
+            bid + bidIncrement > gold
+
+        Nothing ->
+            False
 
 
 viewMessage : String -> Html msg
