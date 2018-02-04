@@ -8,6 +8,7 @@ import AnimationFrame
 import Time exposing (Time)
 import Debug
 import Server
+import Shake
 
 
 subscriptions : Model -> Sub Msg
@@ -15,6 +16,7 @@ subscriptions model =
     Sub.batch
         [ Server.listen model ServerMsgReceived
         , AnimationFrame.times AnimationFrame
+        , Shake.shake (always Shake)
         , case model.stage of
             TradeStage _ ->
                 Time.every Time.second (TradeMsg << always Yield)
@@ -100,6 +102,9 @@ update msg model =
             ( { model | inventoryVisible = not model.inventoryVisible }
             , Cmd.none
             )
+
+        Shake ->
+            ( model, Debug.log "shake" Cmd.none )
 
         AnimationFrame tick ->
             ( { model

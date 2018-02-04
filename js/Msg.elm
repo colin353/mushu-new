@@ -13,6 +13,7 @@ type Msg
     | ServerMsgReceived (Result String Api.Action)
     | ToggleInventory
     | AnimationFrame Time
+    | Shake
 
 
 type ReadyMsg
