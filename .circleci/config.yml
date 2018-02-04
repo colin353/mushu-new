@@ -20,3 +20,26 @@ jobs:
       - run: cd js; sysconfcpus -n 2 elm-format --validate *.elm
         # Try to build the elm code.
       - run: cd js; sysconfcpus -n 2 elm make --yes Main.elm
+  deploy:
+    docker:
+      # specify the version
+      - image: colinmerkel/mushu-ci:latest
+      
+    working_directory: /go/src/github.com/colin353/mushu-new
+    steps:
+      - checkout
+      - run: ./build.sh --release
+      - docker build -t colinmerkel/mushu .
+      - docker push colinmerkel/mushu
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build
+      - deploy
+          requires:
+            - build
+          filters:
+            branches:
+              only: containerize
