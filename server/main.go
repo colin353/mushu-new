@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -59,9 +61,12 @@ func join(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	port := flag.String("port", "8080", "the port to use to serve")
+	flag.Parse()
+
 	AllGames = make(map[string]*GameServer)
 	http.HandleFunc("/join", join)
 	http.HandleFunc("/", http.FileServer(http.Dir("./web")).ServeHTTP)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", *port), nil))
 
 }

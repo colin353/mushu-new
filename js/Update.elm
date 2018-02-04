@@ -4,21 +4,15 @@ import BaseType exposing (..)
 import Model exposing (..)
 import Msg exposing (..)
 import Api
-import WebSocket
 import AnimationFrame
 import Time exposing (Time)
 import Debug
 
 
-wsUrl : String
-wsUrl =
-    "ws://localhost:8080/join?name=Leo"
-
-
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ WebSocket.listen wsUrl ServerMsgReceived
+        [ Model.listen model ServerMsgReceived
         , AnimationFrame.times AnimationFrame
         ]
 
@@ -30,7 +24,7 @@ update msg model =
             case msg of
                 Ready ->
                     ( model
-                    , WebSocket.send wsUrl
+                    , Model.send model
                         (Api.encodeToMessage Api.Ready)
                     )
 
@@ -38,7 +32,7 @@ update msg model =
             tryUpdateProduction model (updateProduction msg)
 
         AuctionMsg msg ->
-            tryUpdateAuction model (updateAuction msg)
+            tryUpdateAuction model (updateAuction msg (Model.send model))
 
         {- [tmp] does nothing now -}
         TradeMsg msg ->
@@ -49,7 +43,7 @@ update msg model =
 
         MsgServer ->
             ( { model | input = "" }
-            , WebSocket.send wsUrl model.input
+            , Model.send model model.input
             )
 
         ServerMsgReceived str ->
@@ -116,12 +110,16 @@ updateProduction msg m =
             )
 
 
-updateAuction : AuctionMsg -> AuctionModel -> ( AuctionModel, Cmd Msg )
-updateAuction msg m =
+type alias SendToServer =
+    String -> Cmd Msg
+
+
+updateAuction : AuctionMsg -> SendToServer -> AuctionModel -> ( AuctionModel, Cmd Msg )
+updateAuction msg send m =
     case msg of
         Bid ->
             ( m
-            , WebSocket.send wsUrl
+            , send
                 (Api.encodeToMessage
                     (Api.Bid
                         {- [tofix] duplicate -}

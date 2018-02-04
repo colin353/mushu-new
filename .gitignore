@@ -32,6 +32,7 @@ server/server
 
 # The compiled elm output
 web/index.html
+web/elm.js
 
 # No compiled output
 *elm.js

@@ -7,10 +7,20 @@ import View
 import Html
 
 
-main : Program Never Model Msg.Msg
+type alias Flags =
+    { hostname : String
+    }
+
+
+init : Flags -> ( Model, Cmd msg )
+init flags =
+    ( Model.initModel flags.hostname, Cmd.none )
+
+
+main : Program Flags Model Msg.Msg
 main =
-    Html.program
-        { init = ( Model.initModel, Cmd.none )
+    Html.programWithFlags
+        { init = init
         , view = View.view
         , update = Update.update
         , subscriptions = Update.subscriptions

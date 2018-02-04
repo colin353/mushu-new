@@ -1,11 +1,14 @@
 module Model exposing (..)
 
+import Msg exposing (..)
 import BaseType exposing (..)
 import Time exposing (Time)
+import WebSocket
 
 
 type alias Model =
     { stage : Stage
+    , hostname : String
     , gold : Int
     , inventory : Maybe (Material Int)
     , factories : Material Int
@@ -54,9 +57,10 @@ type alias TradeModel =
     ()
 
 
-initModel : Model
-initModel =
+initModel : String -> Model
+initModel hostname =
     { stage = ReadyStage initReadyModel
+    , hostname = hostname
     , gold = 25
     , inventory = Just emptyMaterial
     , factories = emptyMaterial
@@ -66,6 +70,21 @@ initModel =
     , messages = []
     , inventoryVisible = False
     }
+
+
+wsURL : Model -> String
+wsURL model =
+    ("ws://" ++ model.hostname ++ "/join?name=Leo")
+
+
+send : Model -> String -> Cmd Msg
+send model =
+    WebSocket.send (wsURL model)
+
+
+listen : Model -> (String -> Msg) -> Sub Msg
+listen model =
+    WebSocket.listen (wsURL model)
 
 
 initReadyModel : ReadyModel
