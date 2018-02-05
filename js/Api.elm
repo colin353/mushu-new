@@ -19,7 +19,7 @@ type Action
     | AuctionWon
     | PriceUpdated Price
     | SaleCompleted Int Fruit Float
-    | MaterialReceived (Material Int)
+    | TradeCompleted (Material Int)
     | GameOver String
 
 
@@ -84,9 +84,22 @@ actionHelp a =
                 (D.field "type" fruit)
                 (D.field "price" D.float)
 
-        "material_received" ->
-            D.map MaterialReceived <|
-                D.field "material_received" (material D.int)
+        "trade_completed" ->
+            D.map TradeCompleted <|
+                D.field "materials"
+                    (D.string
+                        |> D.andThen
+                            (D.decodeString (material D.int)
+                                >> (\r ->
+                                        case r of
+                                            Ok mat ->
+                                                D.succeed mat
+
+                                            Err e ->
+                                                D.fail e
+                                   )
+                            )
+                    )
 
         "game_over" ->
             D.map GameOver <|
@@ -129,7 +142,7 @@ type ServerAction
     | Ready
     | Bid Int
     | Sell Fruit Int
-    | ProposeTrade (Material Int)
+    | Trade (Material Int)
     | ActivateCard CardSeed
 
 
@@ -165,9 +178,9 @@ encodeServerAction a =
                       ]
                     )
 
-                ProposeTrade mat ->
-                    ( "propose_trade"
-                    , [ ( "material", encodeMaterial mat )
+                Trade mat ->
+                    ( "trade"
+                    , [ ( "materials", E.string (E.encode 0 (encodeMaterial mat)) )
                       ]
                     )
 

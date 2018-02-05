@@ -8,6 +8,7 @@ import AnimationFrame
 import Time exposing (Time)
 import Debug
 import Server
+import Shake
 
 
 subscriptions : Model -> Sub Msg
@@ -17,7 +18,10 @@ subscriptions model =
         , AnimationFrame.times AnimationFrame
         , case model.stage of
             TradeStage _ ->
-                Time.every Time.second (TradeMsg << always Yield)
+                Sub.batch
+                    [ Shake.shake (always Shake)
+                    , Time.every Time.second (TradeMsg << always Yield)
+                    ]
 
             _ ->
                 Sub.none
@@ -77,6 +81,24 @@ update msg model =
                                             )
                                         )
                                         { model | inventory = newInv }
+                        )
+                        model
+
+                EmptyBasket ->
+                    updateIfTrade
+                        (\m model ->
+                            tryUpdateTrade
+                                (\m ->
+                                    ( { m | basket = emptyMaterial }
+                                    , Cmd.none
+                                    )
+                                )
+                                { model
+                                    | inventory =
+                                        mapMaterial2 (always (+))
+                                            m.basket
+                                            model.inventory
+                                }
                         )
                         model
 
@@ -141,6 +163,13 @@ update msg model =
             , Cmd.none
             )
 
+        Shake ->
+            tryUpdateTrade
+                (\m ->
+                    ( m, Server.send model (Api.Trade m.basket) )
+                )
+                model
+
         AnimationFrame tick ->
             ( { model
                 | stage =
@@ -187,7 +216,11 @@ updateProduction msg m =
             )
 
 
-updateAuction : AuctionMsg -> Server.SendToServer -> AuctionModel -> ( AuctionModel, Cmd Msg )
+updateAuction :
+    AuctionMsg
+    -> Server.SendToServer
+    -> AuctionModel
+    -> ( AuctionModel, Cmd Msg )
 updateAuction msg send m =
     case msg of
         Bid ->
@@ -407,13 +440,10 @@ handleAction action model =
             , Cmd.none
             )
 
-        Api.MaterialReceived mat ->
-            ( { model
-                | inventory =
-                    mapMaterial2 (always (*)) mat model.inventory
-              }
-            , Cmd.none
-            )
+        Api.TradeCompleted mat ->
+            tryUpdateTrade
+                (\m -> ( { m | basket = mat }, Cmd.none ))
+                model
 
         Api.GameOver winner ->
             ( model, Cmd.none )
