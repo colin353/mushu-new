@@ -24,10 +24,10 @@ const (
 	ProductionTimeout time.Duration = 10 * time.Second
 	// TradeTimeout specifies how long a trade can hang without a
 	// counterpart before it is cancelled.
-	TradeTimeout time.Duration = 2 * time.Millisecond
+	TradeTimeout time.Duration = 100 * time.Millisecond
 	// TradingStageTime is how long the production phase will last before
 	// the next phase begins.
-	TradingStageTime time.Duration = 2 * time.Second
+	TradingStageTime time.Duration = 10 * time.Second
 
 	// MinPlayers sets the minimum number of players required before the game
 	// will proceed past the Waiting stage.
