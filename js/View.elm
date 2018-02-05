@@ -16,49 +16,59 @@ bidIncrement =
 
 view : Model -> Html Msg
 view model =
-    div [] <|
+    div [ class "view" ] <|
         List.concat
             [ [ topBar model
-              , div [] (List.map viewMessage model.messages)
-              , case model.stage of
-                    ReadyStage m ->
-                        Html.map ReadyMsg (readyView m)
+              , div [ class "active-state" ]
+                    [ case model.stage of
+                        ReadyStage m ->
+                            Html.map ReadyMsg (readyView m)
 
-                    ProductionStage m ->
-                        Html.map ProductionMsg
-                            (productionView model.factories m)
+                        ProductionStage m ->
+                            Html.map ProductionMsg
+                                (productionView model.factories m)
 
-                    AuctionStage m ->
-                        Html.map AuctionMsg (auctionView m model.gold)
+                        AuctionStage m ->
+                            Html.map AuctionMsg (auctionView m model.gold)
 
-                    TradeStage m ->
-                        Html.map TradeMsg (tradeView model m)
-              ]
-            , if model.inventoryVisible then
-                [ inventoryView model.inventory ]
-              else
-                []
-            , [ toolbar model
-              , div []
-                    [ text ("$" ++ (toString model.gold))
+                        TradeStage m ->
+                            Html.map TradeMsg (tradeView model m)
                     ]
+              ]
+            , [ div [ class "tray" ]
+                    (List.concat
+                        [ if model.inventoryVisible then
+                            [ inventoryView model.inventory ]
+                          else
+                            []
+                        , [ toolbar model
+                          , div []
+                                [ text ("$" ++ (toString model.gold))
+                                ]
+                          ]
+                        ]
+                    )
+              , div [] (List.map viewMessage (List.reverse model.messages))
               ]
             ]
 
 
 topBar : Model -> Html Msg
 topBar model =
-    div [] <|
-        case
-            timer model.stage
-        of
-            Just timer ->
-                [ text
-                    (toString << floor << Time.inSeconds << timeLeft <| timer)
-                ]
+    div [ class "heading" ]
+        [ div [] [ text "mushu: test" ]
+        , div [] <|
+            case
+                timer model.stage
+            of
+                Just timer ->
+                    [ text
+                        (toString << floor << Time.inSeconds << timeLeft <| timer)
+                    ]
 
-            Nothing ->
-                []
+                Nothing ->
+                    []
+        ]
 
 
 inventoryView : Material Int -> Html Msg
@@ -84,8 +94,10 @@ toolbar m =
 
 readyView : ReadyModel -> Html ReadyMsg
 readyView m =
-    div []
-        [ button [ onClick Ready ] [ text "Ready" ] ]
+    div [ class "card" ]
+        [ div [ class "card-text" ] [ text "Waiting for players..." ]
+        , button [ onClick Ready ] [ text "Ready" ]
+        ]
 
 
 tradeView : Model -> TradeModel -> Html TradeMsg
@@ -244,26 +256,25 @@ productionView factories m =
 
 auctionView : AuctionModel -> Int -> Html AuctionMsg
 auctionView m gold =
-    div []
-        [ case m.auction of
-            Just a ->
-                div [] <|
-                    List.map (div [] << List.singleton) <|
-                        List.concat <|
-                            [ [ text "Currently Bidding on:"
-                              , text a.card.name
-                              ]
-                            , case a.highestBid of
+    case m.auction of
+        Just a ->
+            div [ class "card" ] <|
+                List.concat
+                    [ [ div [ class "card-text" ] [ text a.card.name ] ]
+                    , List.map (div [] << List.singleton) <|
+                        List.concat
+                            [ case a.highestBid of
                                 Just { bidder, bid } ->
                                     [ text <| "Highest Bid: " ++ toString bid
                                     , text <| "Highest Bidder: " ++ bidder
                                     ]
 
                                 Nothing ->
-                                    [ text "No one bid yet" ]
+                                    []
                             , [ button
                                     [ onClick Msg.Bid
                                     , disabled (cantBid a.highestBid gold)
+                                    , class "card-button"
                                     ]
                                     [ text <|
                                         "Bid: "
@@ -279,10 +290,10 @@ auctionView m gold =
                                     ]
                               ]
                             ]
+                    ]
 
-            Nothing ->
-                text "No Cards in Auction"
-        ]
+        Nothing ->
+            text "No Cards in Auction"
 
 
 cantBid : Maybe Bid -> Int -> Bool
