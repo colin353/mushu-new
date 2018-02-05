@@ -45,4 +45,4 @@ workflows:
             - build
           filters:
             branches:
-              only: containerize
+              only: master
