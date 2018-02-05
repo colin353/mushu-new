@@ -91,7 +91,7 @@ update msg model =
                 Err e ->
                     ( { model
                         | messages =
-                            (e) :: model.messages
+                            e :: model.messages
                       }
                     , Cmd.none
                     )
