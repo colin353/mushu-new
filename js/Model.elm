@@ -1,9 +1,7 @@
 module Model exposing (..)
 
-import Msg exposing (..)
 import BaseType exposing (..)
 import Time exposing (Time)
-import WebSocket
 
 
 type alias Model =
@@ -71,21 +69,6 @@ initModel hostname =
     , messages = []
     , inventoryVisible = False
     }
-
-
-wsURL : Model -> String
-wsURL model =
-    ("ws://" ++ model.hostname ++ "/join?name=Leo")
-
-
-send : Model -> String -> Cmd Msg
-send model =
-    WebSocket.send (wsURL model)
-
-
-listen : Model -> (String -> Msg) -> Sub Msg
-listen model =
-    WebSocket.listen (wsURL model)
 
 
 initReadyModel : ReadyModel

@@ -2,6 +2,7 @@ module Msg exposing (..)
 
 import BaseType exposing (..)
 import Time exposing (Time)
+import Api
 
 
 type Msg
@@ -9,9 +10,7 @@ type Msg
     | ProductionMsg ProductionMsg
     | AuctionMsg AuctionMsg
     | TradeMsg TradeMsg
-    | Input String
-    | MsgServer
-    | ServerMsgReceived String
+    | ServerMsgReceived (Result String Api.Action)
     | ToggleInventory
     | AnimationFrame Time
 

@@ -7,12 +7,13 @@ import Api
 import AnimationFrame
 import Time exposing (Time)
 import Debug
+import Server
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Model.listen model ServerMsgReceived
+        [ Server.listen model ServerMsgReceived
         , AnimationFrame.times AnimationFrame
         , case model.stage of
             TradeStage _ ->
@@ -30,15 +31,14 @@ update msg model =
             case msg of
                 Ready ->
                     ( model
-                    , Model.send model
-                        (Api.encodeToMessage Api.Ready)
+                    , Server.send model Api.Ready
                     )
 
         ProductionMsg msg ->
             tryUpdateProduction model (updateProduction msg)
 
         AuctionMsg msg ->
-            tryUpdateAuction (updateAuction msg (Model.send model)) model
+            tryUpdateAuction (updateAuction msg (Server.send model)) model
 
         TradeMsg msg ->
             case msg of
@@ -80,26 +80,18 @@ update msg model =
                         )
                         model
 
-        Input newInput ->
-            ( { model | input = newInput }, Cmd.none )
-
-        MsgServer ->
-            ( { model | input = "" }
-            , Model.send model model.input
-            )
-
-        ServerMsgReceived str ->
-            case Api.decodeMessage str of
+        ServerMsgReceived action ->
+            case action of
                 Ok action ->
                     { model
-                        | messages = str :: model.messages
+                        | messages = toString action :: model.messages
                     }
                         |> handleAction action
 
                 Err e ->
                     ( { model
                         | messages =
-                            (str ++ " <--- " ++ e) :: model.messages
+                            (e) :: model.messages
                       }
                     , Cmd.none
                     )
@@ -155,32 +147,26 @@ updateProduction msg m =
             )
 
 
-type alias SendToServer =
-    String -> Cmd Msg
-
-
-updateAuction : AuctionMsg -> SendToServer -> AuctionModel -> ( AuctionModel, Cmd Msg )
+updateAuction : AuctionMsg -> Server.SendToServer -> AuctionModel -> ( AuctionModel, Cmd Msg )
 updateAuction msg send m =
     case msg of
         Bid ->
             ( m
             , send
-                (Api.encodeToMessage
-                    (Api.Bid
-                        {- [tofix] duplicate -}
-                        (case m.auction of
-                            Just a ->
-                                case a.highestBid of
-                                    Just { bid } ->
-                                        bid + 5
+                (Api.Bid
+                    {- [tofix] duplicate -}
+                    (case m.auction of
+                        Just a ->
+                            case a.highestBid of
+                                Just { bid } ->
+                                    bid + 5
 
-                                    Nothing ->
-                                        a.card.startingBid
+                                Nothing ->
+                                    a.card.startingBid
 
-                            Nothing ->
-                                Debug.crash
-                                    "Bid button should be disabled when no card"
-                        )
+                        Nothing ->
+                            Debug.crash
+                                "Bid button should be disabled when no card"
                     )
                 )
             )

@@ -37,10 +37,6 @@ view model =
                 [ inventoryView model.inventory ]
               else
                 []
-            , [ toolbar model
-              , input [ value model.input, onInput Input ] []
-              , button [ onClick MsgServer ] [ text "Send" ]
-              ]
             , [ div []
                     [ text ("$" ++ (toString model.gold))
                     ]
