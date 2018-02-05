@@ -1,8 +1,9 @@
 module View exposing (view)
 
-import BaseType exposing (..)
+import Material exposing (Material)
 import Model exposing (..)
 import Msg exposing (..)
+import Timer
 import Helper
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -59,7 +60,13 @@ topBar model =
             of
                 Just timer ->
                     [ text
-                        (toString << floor << Time.inSeconds << timeLeft <| timer)
+                        (toString
+                            << floor
+                            << Time.inSeconds
+                            << Timer.timeLeft
+                         <|
+                            timer
+                        )
                     ]
 
                 Nothing ->
@@ -72,9 +79,9 @@ inventoryView mat =
     div [] <|
         List.map
             (\fr ->
-                text (toString fr ++ ": " ++ toString (lookupMaterial fr mat))
+                text (toString fr ++ ": " ++ toString (Material.lookup fr mat))
             )
-            allFruits
+            Material.allFruits
 
 
 toolbar : Model -> Html Msg
@@ -122,9 +129,9 @@ tradeView { inventory, price } m =
                                 , List.map
                                     (text
                                         << toString
-                                        << flip lookupMaterial m.basket
+                                        << flip Material.lookup m.basket
                                     )
-                                    allFruits
+                                    Material.allFruits
                                 , [ button [ onClick EmptyBasket ]
                                         [ text "Empty" ]
                                   ]
@@ -141,7 +148,7 @@ tradeView { inventory, price } m =
                                             [ onClick (MoveToBasket fr 1)
                                             , disabled
                                                 (Nothing
-                                                    == move fr
+                                                    == Helper.move fr
                                                         1
                                                         inventory
                                                         m.basket
@@ -149,7 +156,7 @@ tradeView { inventory, price } m =
                                             ]
                                             [ text "^" ]
                                     )
-                                    allFruits
+                                    Material.allFruits
                                 ]
                   , row
                         []
@@ -163,7 +170,7 @@ tradeView { inventory, price } m =
                                             [ onClick (MoveToBasket fr -1)
                                             , disabled
                                                 (Nothing
-                                                    == move fr
+                                                    == Helper.move fr
                                                         -1
                                                         inventory
                                                         m.basket
@@ -171,7 +178,7 @@ tradeView { inventory, price } m =
                                             ]
                                             [ text "v" ]
                                     )
-                                    allFruits
+                                    Material.allFruits
                                 ]
                   , row
                         []
@@ -182,9 +189,9 @@ tradeView { inventory, price } m =
                                 , List.map
                                     (text
                                         << toString
-                                        << flip lookupMaterial inventory
+                                        << flip Material.lookup inventory
                                     )
-                                    allFruits
+                                    Material.allFruits
                                 ]
                   ]
                 , case price of
@@ -201,7 +208,7 @@ tradeView { inventory, price } m =
                                             button
                                                 [ onClick (SellButton fr)
                                                 , disabled
-                                                    (lookupMaterial fr
+                                                    (Material.lookup fr
                                                         inventory
                                                         < 1
                                                     )
@@ -209,7 +216,7 @@ tradeView { inventory, price } m =
                                                 [ text
                                                     (toString
                                                         (floor
-                                                            (lookupMaterial
+                                                            (Material.lookup
                                                                 fr
                                                                 p
                                                             )
@@ -218,7 +225,7 @@ tradeView { inventory, price } m =
                                                     )
                                                 ]
                                         )
-                                        allFruits
+                                        Material.allFruits
                                     ]
                         ]
                 ]
@@ -234,7 +241,7 @@ productionView factories m =
                         (toString fr
                             ++ ": "
                             ++ toString
-                                (lookupMaterial fr factories
+                                (Material.lookup fr factories
                                     + (case m.selected of
                                         Just selected ->
                                             if selected == fr then
@@ -249,7 +256,7 @@ productionView factories m =
                         )
                     ]
             )
-            allFruits
+            Material.allFruits
 
 
 auctionView : AuctionModel -> Int -> Html AuctionMsg

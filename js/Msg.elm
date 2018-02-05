@@ -1,6 +1,6 @@
 module Msg exposing (..)
 
-import BaseType exposing (..)
+import Material exposing (Fruit)
 import Time exposing (Time)
 import Api
 
