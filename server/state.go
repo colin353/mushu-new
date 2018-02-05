@@ -16,18 +16,18 @@ const (
 )
 
 const (
-	// AuctionBidTime specifies the amount of time after the last bid is
-	// placed that the auction will expire.
-	AuctionBidTime time.Duration = 5 * time.Second
 	// ProductionTimeout is how long the production phase will last before
 	// the next phase begins.
 	ProductionTimeout time.Duration = 10 * time.Second
-	// TradeTimeout specifies how long a trade can hang without a
-	// counterpart before it is cancelled.
-	TradeTimeout time.Duration = 100 * time.Millisecond
+	// AuctionBidTime specifies the amount of time after the last bid is
+	// placed that the auction will expire.
+	AuctionBidTime time.Duration = 5 * time.Second
 	// TradingStageTime is how long the production phase will last before
 	// the next phase begins.
 	TradingStageTime time.Duration = 10 * time.Second
+	// TradeTimeout specifies how long a trade can hang without a
+	// counterpart before it is cancelled.
+	TradeTimeout time.Duration = 100 * time.Millisecond
 
 	// MinPlayers sets the minimum number of players required before the game
 	// will proceed past the Waiting stage.
