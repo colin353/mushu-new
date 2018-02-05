@@ -47,10 +47,10 @@ update msg model =
             tryUpdateAuction (updateAuction msg) model
 
         TradeMsg msg ->
-            updateIfTrade
-                (\_ model ->
-                    case msg of
-                        Yield ->
+            case msg of
+                Yield ->
+                    updateIfTrade
+                        (\_ model ->
                             ( { model
                                 | inventory =
                                     mapMaterial
@@ -64,8 +64,27 @@ update msg model =
                               }
                             , Cmd.none
                             )
-                )
-                model
+                        )
+                        model
+
+                MoveToBasket fruit count ->
+                    updateIfTrade
+                        (\m model ->
+                            case move fruit count model.inventory m.basket of
+                                Nothing ->
+                                    Debug.crash
+                                        "+/- buttons should be disabled"
+
+                                Just ( newInv, newBasket ) ->
+                                    tryUpdateTrade
+                                        (\m ->
+                                            ( { m | basket = newBasket }
+                                            , Cmd.none
+                                            )
+                                        )
+                                        { model | inventory = newInv }
+                        )
+                        model
 
         Input newInput ->
             ( { model | input = newInput }, Cmd.none )

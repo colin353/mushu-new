@@ -51,7 +51,8 @@ type alias Bid =
 
 
 type alias TradeModel =
-    ()
+    { basket : Material Int
+    }
 
 
 initModel : Model
@@ -80,7 +81,7 @@ initProductionModel =
 
 initTradeModel : TradeModel
 initTradeModel =
-    ()
+    { basket = emptyMaterial }
 
 
 initAuctionModel : AuctionModel
@@ -96,6 +97,35 @@ baseYieldRate =
 yieldRate : Material Int -> Material Int
 yieldRate =
     mapMaterial (always ((*) baseYieldRate))
+
+
+move :
+    Fruit
+    -> Int
+    -> Material Int
+    -> Material Int
+    -> Maybe ( Material Int, Material Int )
+move fruit count mat1 mat2 =
+    let
+        newMat1 =
+            updateMaterial fruit
+                (flip (-) count)
+                mat1
+
+        newMat2 =
+            updateMaterial fruit
+                ((+) count)
+                mat2
+    in
+        if
+            lookupMaterial fruit newMat1
+                < 0
+                || lookupMaterial fruit newMat2
+                < 0
+        then
+            Nothing
+        else
+            Just ( newMat1, newMat2 )
 
 
 
