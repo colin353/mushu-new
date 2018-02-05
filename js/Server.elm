@@ -11,7 +11,7 @@ type alias SendToServer =
 
 wsURL : String -> String
 wsURL hostname =
-    ("ws://" ++ hostname ++ "/join")
+    "ws://" ++ hostname ++ "/join"
 
 
 send : { m | hostname : String } -> Api.ServerAction -> Cmd Msg

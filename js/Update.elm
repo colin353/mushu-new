@@ -39,7 +39,7 @@ update msg model =
                     )
 
                 NameChange name ->
-                    ( { model | name = name }, (Server.send model) (Api.SetName name) )
+                    ( { model | name = name }, Server.send model (Api.SetName name) )
 
         ProductionMsg msg ->
             tryUpdateProduction model (updateProduction msg)
