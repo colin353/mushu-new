@@ -3,15 +3,11 @@ module View exposing (view)
 import BaseType exposing (..)
 import Model exposing (..)
 import Msg exposing (..)
+import Helper
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Time
-
-
-bidIncrement : number
-bidIncrement =
-    5
 
 
 view : Model -> Html Msg
@@ -272,38 +268,17 @@ auctionView m gold =
                                 Nothing ->
                                     []
                             , [ button
-                                    [ onClick Msg.Bid
-                                    , disabled (cantBid a.highestBid gold)
+                                    [ onClick BidButton
+                                    , disabled (gold < Helper.nextBid a)
                                     , class "card-button"
                                     ]
-                                    [ text <|
-                                        "Bid: "
-                                            ++ toString
-                                                {- [tofix] duplicate -}
-                                                (case a.highestBid of
-                                                    Just { bid } ->
-                                                        bid + bidIncrement
-
-                                                    Nothing ->
-                                                        a.card.startingBid
-                                                )
-                                    ]
+                                    [ text <| "Bid: " ++ toString (Helper.nextBid a) ]
                               ]
                             ]
                     ]
 
         Nothing ->
             text "No Cards in Auction"
-
-
-cantBid : Maybe Bid -> Int -> Bool
-cantBid bid gold =
-    case bid of
-        Just { bid } ->
-            bid + bidIncrement > gold
-
-        Nothing ->
-            False
 
 
 viewMessage : String -> Html msg

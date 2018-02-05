@@ -32,5 +32,5 @@ type ProductionMsg
 
 
 type AuctionMsg
-    = Bid
+    = BidButton
     | ClockUpdated Int

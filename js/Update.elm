@@ -4,6 +4,7 @@ import BaseType exposing (..)
 import Model exposing (..)
 import Msg exposing (..)
 import Api
+import Helper
 import AnimationFrame
 import Time exposing (Time)
 import Debug
@@ -200,19 +201,13 @@ updateAuction :
     -> ( AuctionModel, Cmd Msg )
 updateAuction msg send m =
     case msg of
-        Bid ->
+        BidButton ->
             ( m
             , send
                 (Api.Bid
-                    {- [tofix] duplicate -}
                     (case m.auction of
                         Just a ->
-                            case a.highestBid of
-                                Just { bid } ->
-                                    bid + 5
-
-                                Nothing ->
-                                    a.card.startingBid
+                            Helper.nextBid a
 
                         Nothing ->
                             Debug.crash
