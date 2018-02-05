@@ -77,7 +77,7 @@ readyView : ReadyModel -> Html ReadyMsg
 readyView m =
     div [ class "card" ]
         [ div [ class "card-text" ] [ text "Set your name:" ]
-        , input [ placeholder "Anonymous", onInput NameChange ] []
+        , input [ placeholder "Anonymous", onInput NameInputChange ] []
         , div [ class "card-text" ] [ text "Waiting for players..." ]
         , button [ onClick Ready ] [ text "Ready" ]
         ]

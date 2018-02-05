@@ -38,7 +38,7 @@ update msg model =
                     , Server.send model Api.Ready
                     )
 
-                NameChange name ->
+                NameInputChange name ->
                     ( { model | name = name }, Server.send model (Api.SetName name) )
 
         ProductionMsg msg ->
