@@ -37,7 +37,8 @@ view model =
                 [ inventoryView model.inventory ]
               else
                 []
-            , [ div []
+            , [ toolbar model
+              , div []
                     [ text ("$" ++ (toString model.gold))
                     ]
               ]
