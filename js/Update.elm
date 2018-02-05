@@ -84,6 +84,24 @@ update msg model =
                         )
                         model
 
+                EmptyBasket ->
+                    updateIfTrade
+                        (\m model ->
+                            tryUpdateTrade
+                                (\m ->
+                                    ( { m | basket = emptyMaterial }
+                                    , Cmd.none
+                                    )
+                                )
+                                { model
+                                    | inventory =
+                                        mapMaterial2 (always (+))
+                                            m.basket
+                                            model.inventory
+                                }
+                        )
+                        model
+
                 SellButton fruit ->
                     case model.price of
                         Just price ->
@@ -146,7 +164,11 @@ update msg model =
             )
 
         Shake ->
-            ( model, Debug.log "shake" Cmd.none )
+            tryUpdateTrade
+                (\m ->
+                    ( m, Server.send model (Api.Trade m.basket) )
+                )
+                model
 
         AnimationFrame tick ->
             ( { model
@@ -194,7 +216,11 @@ updateProduction msg m =
             )
 
 
-updateAuction : AuctionMsg -> Server.SendToServer -> AuctionModel -> ( AuctionModel, Cmd Msg )
+updateAuction :
+    AuctionMsg
+    -> Server.SendToServer
+    -> AuctionModel
+    -> ( AuctionModel, Cmd Msg )
 updateAuction msg send m =
     case msg of
         Bid ->
@@ -414,13 +440,10 @@ handleAction action model =
             , Cmd.none
             )
 
-        Api.MaterialReceived mat ->
-            ( { model
-                | inventory =
-                    mapMaterial2 (always (*)) mat model.inventory
-              }
-            , Cmd.none
-            )
+        Api.TradeCompleted mat ->
+            tryUpdateTrade
+                (\m -> ( { m | basket = mat }, Cmd.none ))
+                model
 
         Api.GameOver winner ->
             ( model, Cmd.none )

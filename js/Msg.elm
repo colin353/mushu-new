@@ -24,6 +24,7 @@ type TradeMsg
     = Yield
     | MoveToBasket Fruit Int
     | SellButton Fruit
+    | EmptyBasket
 
 
 type ProductionMsg

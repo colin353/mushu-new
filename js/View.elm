@@ -92,13 +92,16 @@ tradeView { inventory, price } m =
                 [ [ row [] <|
                         List.map (cell [] << List.singleton) <|
                             List.concat
-                                [ [ text "Trade:" ]
+                                [ [ text "Basket:" ]
                                 , List.map
                                     (text
                                         << toString
                                         << flip lookupMaterial m.basket
                                     )
                                     allFruits
+                                , [ button [ onClick EmptyBasket ]
+                                        [ text "Empty" ]
+                                  ]
                                 ]
                   , row
                         []
