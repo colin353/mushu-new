@@ -3,6 +3,7 @@ module Material
         ( Fruit(..)
         , allFruits
         , fruitFromString
+        , shorthand
         , Material
         , lookup
         , create
@@ -15,6 +16,7 @@ module Material
         , set
         , update
         , tryUpdate
+        , trySubtract
         , fold
         )
 
@@ -48,6 +50,11 @@ fruitFromString str =
 
         _ ->
             Nothing
+
+
+shorthand : Fruit -> String
+shorthand =
+    String.toLower << String.left 1 << toString
 
 
 type alias Material a =
@@ -166,3 +173,24 @@ tryUpdate fruit f =
 fold : (Fruit -> a -> b -> b) -> b -> Material a -> b
 fold acc b =
     List.foldr (uncurry acc) b << toList
+
+
+trySubtract : Material number -> Material number -> Maybe (Material number)
+trySubtract =
+    curry <|
+        traverseMaybe
+            << uncurry
+                (map2
+                    (always
+                        (\a b ->
+                            let
+                                d =
+                                    b - a
+                            in
+                                if d >= 0 then
+                                    Just d
+                                else
+                                    Nothing
+                        )
+                    )
+                )

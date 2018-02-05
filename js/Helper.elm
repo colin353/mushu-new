@@ -1,7 +1,9 @@
 module Helper exposing (..)
 
-import Material exposing (Fruit, Material)
 import Model exposing (..)
+import Msg exposing (Msg)
+import Material exposing (Fruit, Material)
+import Card exposing (Card)
 
 
 bidIncrement : number
@@ -17,6 +19,25 @@ nextBid auction =
 
         Nothing ->
             auction.card.startingBid
+
+
+tryApplyCardEffect : Card -> Model -> Result String ( Model, Cmd Msg )
+tryApplyCardEffect card model =
+    let
+        setInv inv m =
+            ( { m | inventory = inv }, Cmd.none )
+    in
+        (case model.inventory |> Material.trySubtract card.resourceCost of
+            Just inv ->
+                Ok inv
+
+            Nothing ->
+                Err
+                    ("Not enough resources."
+                        ++ "Card shouldn't have been activatable"
+                    )
+        )
+            |> Result.map (flip setInv model)
 
 
 move :
@@ -46,3 +67,18 @@ move fruit count mat1 mat2 =
             Nothing
         else
             Just ( newMat1, newMat2 )
+
+
+isOk : Result e a -> Bool
+isOk r =
+    case r of
+        Ok _ ->
+            True
+
+        Err _ ->
+            False
+
+
+isErr : Result e a -> Bool
+isErr =
+    not << isOk

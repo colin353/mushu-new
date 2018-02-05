@@ -2,7 +2,7 @@ module Update exposing (update, subscriptions)
 
 import BaseType exposing (..)
 import Material exposing (Material)
-import Card
+import Card exposing (Card)
 import Model exposing (..)
 import Msg exposing (..)
 import Api
@@ -79,6 +79,14 @@ update msg model =
             ( { model | inventoryVisible = not model.inventoryVisible }
             , Cmd.none
             )
+
+        CardActivated card ->
+            case Helper.tryApplyCardEffect card model of
+                Ok r ->
+                    r
+
+                Err e ->
+                    Debug.crash ("Card activation error: " ++ e)
 
         Shake ->
             tryUpdateTrade

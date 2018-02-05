@@ -9,6 +9,7 @@ type alias Card =
     , startingBid : Int
     , yieldRateModifier : Material Float
     , priceModifier : Material Float
+    , resourceCost : Material Int
     }
 
 
@@ -36,6 +37,7 @@ baseCard =
     , startingBid = 3
     , yieldRateModifier = noModifier
     , priceModifier = noModifier
+    , resourceCost = Material.empty
     }
 
 
@@ -45,6 +47,7 @@ blueberryJam : Card
 blueberryJam =
     { baseCard
         | name = "Blueberry Jam"
+        , resourceCost = Material.set Blueberry 10 Material.empty
     }
 
 
@@ -58,6 +61,7 @@ famines =
             { baseCard
                 | name = toString fr ++ " Famine"
                 , yieldRateModifier = Material.set fr 0.8 noModifier
+                , resourceCost = Material.set Tomato 5 Material.empty
             }
         )
 
@@ -72,6 +76,7 @@ marketDepressions =
             { baseCard
                 | name = toString fr ++ " Depression"
                 , priceModifier = Material.set fr 0.8 noModifier
+                , resourceCost = Material.set Tomato 4 Material.empty
             }
         )
 

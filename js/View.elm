@@ -75,13 +75,15 @@ topBar model =
 
 
 inventoryView : Material Int -> Html Msg
-inventoryView mat =
-    div [] <|
-        List.map
-            (\fr ->
-                text (toString fr ++ ": " ++ toString (Material.lookup fr mat))
-            )
-            Material.allFruits
+inventoryView =
+    div []
+        << List.singleton
+        << text
+        << List.foldr (++) ""
+        << List.intersperse " "
+        << Material.values
+        << Material.map
+            (\fr c -> toString c ++ Material.shorthand fr)
 
 
 toolbar : Model -> Html Msg
@@ -90,7 +92,29 @@ toolbar m =
         List.concat
             [ [ button [ onClick ToggleInventory ] [ text "Inventory" ] ]
             , List.map
-                (button [] << List.singleton << text << .name)
+                (\c ->
+                    button
+                        [ onClick (CardActivated c)
+                        , disabled (Helper.isErr (Helper.tryApplyCardEffect c m))
+                        ]
+                    <|
+                        List.map (div [] << List.singleton)
+                            [ text c.name
+                            , text
+                                << (++) "Cost: "
+                                << List.foldr (++) ""
+                                << List.intersperse " "
+                              <|
+                                List.filterMap
+                                    (\( fr, c ) ->
+                                        if c /= 0 then
+                                            Just <| toString c ++ Material.shorthand fr
+                                        else
+                                            Nothing
+                                    )
+                                    (Material.toList c.resourceCost)
+                            ]
+                )
                 m.cards
             ]
 
