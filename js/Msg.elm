@@ -22,6 +22,7 @@ type ReadyMsg
 type TradeMsg
     = Yield
     | MoveToBasket Fruit Int
+    | SellButton Fruit
 
 
 type ProductionMsg

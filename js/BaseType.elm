@@ -69,45 +69,33 @@ fruitFromString str =
 
 
 lookupMaterial : Fruit -> Material a -> a
-lookupMaterial fr mat =
+lookupMaterial fr =
     case fr of
         Blueberry ->
-            mat.blueberry
+            .blueberry
 
         Tomato ->
-            mat.tomato
+            .tomato
 
         Corn ->
-            mat.corn
+            .corn
 
         Purple ->
-            mat.purple
+            .purple
 
 
-updateMaterial : Fruit -> (a -> a) -> Material a -> Material a
-updateMaterial fr upd mat =
-    case fr of
-        Blueberry ->
-            { mat | blueberry = upd mat.blueberry }
-
-        Tomato ->
-            { mat | tomato = upd mat.tomato }
-
-        Corn ->
-            { mat | corn = upd mat.corn }
-
-        Purple ->
-            { mat | purple = upd mat.purple }
+createMaterial : (Fruit -> a) -> Material a
+createMaterial f =
+    { blueberry = f Blueberry
+    , tomato = f Tomato
+    , corn = f Corn
+    , purple = f Purple
+    }
 
 
 mapMaterial : (Fruit -> a -> b) -> Material a -> Material b
 mapMaterial f mat =
-    { mat
-        | blueberry = f Blueberry mat.blueberry
-        , tomato = f Tomato mat.tomato
-        , corn = f Corn mat.corn
-        , purple = f Purple mat.purple
-    }
+    createMaterial (\fr -> f fr (lookupMaterial fr mat))
 
 
 mapMaterial2 :
@@ -115,14 +103,66 @@ mapMaterial2 :
     -> Material a
     -> Material b
     -> Material c
-mapMaterial2 f mat1 mat2 =
-    mapMaterial (\fr a -> f fr a (lookupMaterial fr mat2)) mat1
+mapMaterial2 f mat =
+    mapMaterial (\fr -> f fr (lookupMaterial fr mat))
+
+
+tryUpdateMaterial :
+    Fruit
+    -> (a -> Maybe a)
+    -> Material a
+    -> Maybe (Material a)
+tryUpdateMaterial fruit f =
+    traverseMaybe
+        << mapMaterial
+            (\fr ->
+                if fr == fruit then
+                    f
+                else
+                    Just
+            )
+
+
+traverseMaybe : Material (Maybe a) -> Maybe (Material a)
+traverseMaybe mat =
+    List.foldr
+        (\fr ->
+            Maybe.andThen
+                (\m ->
+                    Maybe.map
+                        (\a -> updateMaterial fr (always a) m)
+                        (lookupMaterial fr mat)
+                )
+        )
+        (-- [hack] grab from Blueberry
+         Maybe.map
+            (\a -> createMaterial (always a))
+            (lookupMaterial Blueberry mat)
+        )
+        allFruits
+
+
+updateMaterial : Fruit -> (a -> a) -> Material a -> Material a
+updateMaterial fruit upd =
+    mapMaterial
+        (\fr ->
+            if fr == fruit then
+                upd
+            else
+                identity
+        )
 
 
 emptyMaterial : Material Int
 emptyMaterial =
-    { blueberry = 0
-    , tomato = 0
-    , corn = 0
-    , purple = 0
-    }
+    createMaterial (always 0)
+
+
+toList : Material a -> List ( Fruit, a )
+toList mat =
+    List.map (\fr -> ( fr, lookupMaterial fr mat )) allFruits
+
+
+foldMaterial : (Fruit -> a -> b -> b) -> b -> Material a -> b
+foldMaterial acc b =
+    List.foldr (uncurry acc) b << toList

@@ -31,7 +31,7 @@ view model =
                         Html.map AuctionMsg (auctionView m model.gold)
 
                     TradeStage m ->
-                        Html.map TradeMsg (tradeView model.inventory m)
+                        Html.map TradeMsg (tradeView model m)
               ]
             , if model.inventoryVisible then
                 [ inventoryView model.inventory ]
@@ -72,8 +72,8 @@ readyView m =
         [ button [ onClick Ready ] [ text "Ready" ] ]
 
 
-tradeView : Material Int -> TradeModel -> Html TradeMsg
-tradeView inv m =
+tradeView : Model -> TradeModel -> Html TradeMsg
+tradeView { inventory, price } m =
     let
         setDisplayStyle display =
             div << ((::) (style [ ( "display", display ) ]))
@@ -87,60 +87,112 @@ tradeView inv m =
         cell =
             setDisplayStyle "table-cell"
     in
-        table []
-            [ row [] <|
-                List.map (cell [] << List.singleton) <|
-                    List.concat
-                        [ [ text "Trade:" ]
-                        , List.map
-                            (text << toString << flip lookupMaterial m.basket)
-                            allFruits
-                        ]
-            , row
-                []
-              <|
-                List.map (cell [] << List.singleton) <|
-                    List.concat
-                        [ [ text "" ]
-                        , List.map
-                            (\fr ->
-                                button
-                                    [ onClick (MoveToBasket fr 1)
-                                    , disabled
-                                        (Nothing == move fr 1 inv m.basket)
+        table [] <|
+            List.concat
+                [ [ row [] <|
+                        List.map (cell [] << List.singleton) <|
+                            List.concat
+                                [ [ text "Trade:" ]
+                                , List.map
+                                    (text
+                                        << toString
+                                        << flip lookupMaterial m.basket
+                                    )
+                                    allFruits
+                                ]
+                  , row
+                        []
+                    <|
+                        List.map (cell [] << List.singleton) <|
+                            List.concat
+                                [ [ text "" ]
+                                , List.map
+                                    (\fr ->
+                                        button
+                                            [ onClick (MoveToBasket fr 1)
+                                            , disabled
+                                                (Nothing
+                                                    == move fr
+                                                        1
+                                                        inventory
+                                                        m.basket
+                                                )
+                                            ]
+                                            [ text "^" ]
+                                    )
+                                    allFruits
+                                ]
+                  , row
+                        []
+                    <|
+                        List.map (cell [] << List.singleton) <|
+                            List.concat
+                                [ [ text "" ]
+                                , List.map
+                                    (\fr ->
+                                        button
+                                            [ onClick (MoveToBasket fr -1)
+                                            , disabled
+                                                (Nothing
+                                                    == move fr
+                                                        -1
+                                                        inventory
+                                                        m.basket
+                                                )
+                                            ]
+                                            [ text "v" ]
+                                    )
+                                    allFruits
+                                ]
+                  , row
+                        []
+                    <|
+                        List.map (cell [] << List.singleton) <|
+                            List.concat
+                                [ [ text "Inv:" ]
+                                , List.map
+                                    (text
+                                        << toString
+                                        << flip lookupMaterial inventory
+                                    )
+                                    allFruits
+                                ]
+                  ]
+                , case price of
+                    Nothing ->
+                        []
+
+                    Just p ->
+                        [ row [] <|
+                            List.map (cell [] << List.singleton) <|
+                                List.concat
+                                    [ [ text "Sell" ]
+                                    , List.map
+                                        (\fr ->
+                                            button
+                                                [ onClick (SellButton fr)
+                                                , disabled
+                                                    (lookupMaterial fr
+                                                        inventory
+                                                        < 1
+                                                    )
+                                                ]
+                                                [ text
+                                                    (toString
+                                                        (floor
+                                                            (lookupMaterial
+                                                                fr
+                                                                p
+                                                            )
+                                                        )
+                                                        ++ "g"
+                                                    )
+                                                ]
+                                        )
+                                        allFruits
                                     ]
-                                    [ text "^" ]
-                            )
-                            allFruits
                         ]
-            , row
-                []
-              <|
-                List.map (cell [] << List.singleton) <|
-                    List.concat
-                        [ [ text "" ]
-                        , List.map
-                            (\fr ->
-                                button
-                                    [ onClick (MoveToBasket fr -1)
-                                    , disabled
-                                        (Nothing == move fr -1 inv m.basket)
-                                    ]
-                                    [ text "v" ]
-                            )
-                            allFruits
-                        ]
-            , row
-                []
-              <|
-                List.map (cell [] << List.singleton) <|
-                    List.concat
-                        [ [ text "Inv:" ]
-                        , List.map
-                            (text << toString << flip lookupMaterial inv)
-                            allFruits
-                        ]
-            ]
+                ]
 
 
 productionView : Material Int -> ProductionModel -> Html ProductionMsg
@@ -200,7 +252,10 @@ auctionView m gold =
 
                                 Nothing ->
                                     [ text "No one bid yet" ]
-                            , [ button [ onClick Msg.Bid, disabled (cantBid a.highestBid gold) ]
+                            , [ button
+                                    [ onClick Msg.Bid
+                                    , disabled (cantBid a.highestBid gold)
+                                    ]
                                     [ text <|
                                         "Bid: "
                                             ++ toString

@@ -76,7 +76,7 @@ actionHelp a =
 
         "price_updated" ->
             D.map PriceUpdated <|
-                D.field "new_prices" price
+                D.field "prices" price
 
         "sale_completed" ->
             D.map3 SaleCompleted
@@ -128,7 +128,7 @@ type ServerAction
     = JoinGame String
     | Ready
     | Bid Int
-    | Sell (Material Int)
+    | Sell Fruit Int
     | ProposeTrade (Material Int)
     | ActivateCard CardSeed
 
@@ -158,9 +158,10 @@ encodeServerAction a =
                       ]
                     )
 
-                Sell mat ->
+                Sell type_ quantity ->
                     ( "sell"
-                    , [ ( "material", encodeMaterial mat )
+                    , [ ( "type", encodeFruit type_ )
+                      , ( "quantity", E.int quantity )
                       ]
                     )
 
@@ -180,11 +181,14 @@ encodeServerAction a =
                 ++ values
 
 
+encodeFruit : Fruit -> E.Value
+encodeFruit =
+    toString >> String.toLower >> E.string
+
+
 encodeMaterial : Material Int -> E.Value
-encodeMaterial { blueberry, tomato, corn, purple } =
+encodeMaterial =
     E.object
-        [ ( "blueberry", E.int blueberry )
-        , ( "tomato", E.int tomato )
-        , ( "corn", E.int corn )
-        , ( "purple", E.int purple )
-        ]
+        << foldMaterial
+            (\fr a -> (::) ( String.toLower (toString fr), E.int a ))
+            []
