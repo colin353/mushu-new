@@ -12,7 +12,7 @@ type Msg
     | TradeMsg TradeMsg
     | ServerMsgReceived (Result String Api.Action)
     | ToggleInventory
-    | AnimationFrame Time
+    | UpdateTimer Time
     | Shake
 
 

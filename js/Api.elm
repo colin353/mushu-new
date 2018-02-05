@@ -14,6 +14,7 @@ import Json.Encode as E
 type Action
     = GameStateChanged StageType
     | Welcome
+    | SetClock Int
     | Auction CardSeed
     | BidUpdated Int String
     | AuctionWon
@@ -61,6 +62,10 @@ actionHelp a =
 
         "welcome" ->
             D.succeed Welcome
+
+        "set_clock" ->
+            D.map SetClock
+                (D.field "time" D.int)
 
         "auction_seed" ->
             D.map Auction <|

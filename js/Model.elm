@@ -31,7 +31,9 @@ type alias ReadyModel =
 
 
 type alias ProductionModel =
-    { selected : Maybe Fruit }
+    { selected : Maybe Fruit
+    , timer : Timer
+    }
 
 
 type alias AuctionModel =
@@ -53,6 +55,7 @@ type alias Bid =
 
 type alias TradeModel =
     { basket : Material Int
+    , timer : Timer
     }
 
 
@@ -78,17 +81,58 @@ initReadyModel =
 
 initProductionModel : ProductionModel
 initProductionModel =
-    { selected = Nothing }
+    { selected = Nothing
+
+    -- [todo] pull this to param so it can be synced with server params
+    , timer = startTimer (10 * Time.second)
+    }
 
 
 initTradeModel : TradeModel
 initTradeModel =
-    { basket = emptyMaterial }
+    { basket = emptyMaterial
+    , timer = startTimer (10 * Time.second)
+    }
 
 
 initAuctionModel : AuctionModel
 initAuctionModel =
     { auction = Nothing }
+
+
+timer : Stage -> Maybe Timer
+timer stage =
+    case stage of
+        ReadyStage _ ->
+            Nothing
+
+        ProductionStage m ->
+            Just m.timer
+
+        AuctionStage m ->
+            m.auction |> Maybe.map .timer
+
+        TradeStage m ->
+            Just m.timer
+
+
+updateTimerUsing : (Timer -> Timer) -> Stage -> Stage
+updateTimerUsing upd stage =
+    case stage of
+        ReadyStage m ->
+            stage
+
+        ProductionStage m ->
+            ProductionStage { m | timer = upd m.timer }
+
+        TradeStage m ->
+            TradeStage { m | timer = upd m.timer }
+
+        AuctionStage m ->
+            AuctionStage
+                { m
+                    | auction = Maybe.map (\a -> { a | timer = upd a.timer }) m.auction
+                }
 
 
 baseYieldRate : number
@@ -176,6 +220,19 @@ updateTimer tick timer =
 
         Done ->
             timer
+
+
+setTimeLeft : Time -> Timer -> Timer
+setTimeLeft timeLeft timer =
+    case timer of
+        Paused rec ->
+            Paused { rec | timeLeft = timeLeft }
+
+        Running rec ->
+            Running { rec | timeLeft = timeLeft }
+
+        Done ->
+            Done
 
 
 timeLeft : Timer -> Time

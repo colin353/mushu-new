@@ -15,7 +15,12 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Server.listen model ServerMsgReceived
-        , AnimationFrame.times AnimationFrame
+        , case timer model.stage of
+            Just _ ->
+                AnimationFrame.times UpdateTimer
+
+            Nothing ->
+                Sub.none
         , case model.stage of
             TradeStage _ ->
                 Sub.batch
@@ -170,36 +175,8 @@ update msg model =
                 )
                 model
 
-        AnimationFrame tick ->
-            ( { model
-                | stage =
-                    case model.stage of
-                        ReadyStage m ->
-                            {- [todo] add timer -}
-                            ReadyStage m
-
-                        ProductionStage m ->
-                            {- [todo] add timer -}
-                            ProductionStage m
-
-                        TradeStage m ->
-                            TradeStage m
-
-                        AuctionStage m ->
-                            AuctionStage
-                                { m
-                                    | auction =
-                                        Maybe.map
-                                            (\a ->
-                                                { a
-                                                    | timer =
-                                                        updateTimer tick
-                                                            a.timer
-                                                }
-                                            )
-                                            m.auction
-                                }
-              }
+        UpdateTimer tick ->
+            ( { model | stage = updateTimerUsing (updateTimer tick) model.stage }
             , Cmd.none
             )
 
@@ -365,7 +342,7 @@ handleAction action model =
                                 { -- [tmp] bogus card
                                   card = blueberryJam
                                 , highestBid = Nothing
-                                , timer = startTimer (60 * Time.second)
+                                , timer = startTimer (5 * Time.second)
                                 }
                       }
                     , Cmd.none
@@ -397,6 +374,16 @@ handleAction action model =
 
         Api.Welcome ->
             ( model, Cmd.none )
+
+        Api.SetClock ms ->
+            ( { model
+                | stage =
+                    updateTimerUsing
+                        (setTimeLeft (toFloat ms * Time.millisecond))
+                        model.stage
+              }
+            , Cmd.none
+            )
 
         Api.AuctionWon ->
             {- display "You Won!" message -}

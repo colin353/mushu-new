@@ -203,6 +203,7 @@ func (s *AuctionController) RecieveMessage(u User, m Message) {
 
 			// Update everyone on the new bid and winner.
 			s.game.connection.Broadcast(NewBidUpdatedMessage(s.bid, u.Name()))
+			s.game.connection.Broadcast(NewSetClockMessage(AuctionBidTime))
 		}
 	}
 }

@@ -18,7 +18,8 @@ view : Model -> Html Msg
 view model =
     div [] <|
         List.concat
-            [ [ div [] (List.map viewMessage model.messages)
+            [ [ topBar model
+              , div [] (List.map viewMessage model.messages)
               , case model.stage of
                     ReadyStage m ->
                         Html.map ReadyMsg (readyView m)
@@ -43,6 +44,21 @@ view model =
                     ]
               ]
             ]
+
+
+topBar : Model -> Html Msg
+topBar model =
+    div [] <|
+        case
+            timer model.stage
+        of
+            Just timer ->
+                [ text
+                    (toString << floor << Time.inSeconds << timeLeft <| timer)
+                ]
+
+            Nothing ->
+                []
 
 
 inventoryView : Material Int -> Html Msg
@@ -234,17 +250,7 @@ auctionView m gold =
                 div [] <|
                     List.map (div [] << List.singleton) <|
                         List.concat <|
-                            [ [ text
-                                    ("Time left: "
-                                        ++ (toString
-                                                << floor
-                                                << Time.inSeconds
-                                                << timeLeft
-                                            <|
-                                                a.timer
-                                           )
-                                    )
-                              , text "Currently Bidding on:"
+                            [ [ text "Currently Bidding on:"
                               , text a.card.name
                               ]
                             , case a.highestBid of
