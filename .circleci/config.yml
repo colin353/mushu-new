@@ -30,7 +30,7 @@ jobs:
     steps:
       - checkout
       - run: sysconfcpus -n 2 ./build.sh --release
-      - run: docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
       - run: docker build -t colinmerkel/mushu .
       - run: docker push colinmerkel/mushu
 workflows:

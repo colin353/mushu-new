@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y docker-ce
 # Install node, npm, and elm.
 RUN apt-get install -y nodejs
 RUN npm install -g elm
-RUN npm install -g docker
 RUN npm install -g elm-format
 
 # The purpose of this libsysconfcpus is supposedly to make elm compile faster.
