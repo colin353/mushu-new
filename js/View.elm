@@ -9,6 +9,7 @@ import Html.Events exposing (..)
 import Time
 
 
+bidIncrement : number
 bidIncrement =
     5
 
@@ -30,16 +31,10 @@ view model =
                         Html.map AuctionMsg (auctionView m model.gold)
 
                     TradeStage m ->
-                        Html.map TradeMsg (tradeView m)
+                        Html.map TradeMsg (tradeView model.inventory m)
               ]
             , if model.inventoryVisible then
-                case model.inventory of
-                    Just mat ->
-                        [ inventoryView mat ]
-
-                    {- [todo] handle case -}
-                    Nothing ->
-                        []
+                [ inventoryView model.inventory ]
               else
                 []
             , [ toolbar model
@@ -80,10 +75,75 @@ readyView m =
         [ button [ onClick Ready ] [ text "Ready" ] ]
 
 
-tradeView : TradeModel -> Html TradeMsg
-tradeView m =
-    {- [tmp] Placeholder for the trading stage. -}
-    div [] []
+tradeView : Material Int -> TradeModel -> Html TradeMsg
+tradeView inv m =
+    let
+        setDisplayStyle display =
+            div << ((::) (style [ ( "display", display ) ]))
+
+        table =
+            setDisplayStyle "table"
+
+        row =
+            setDisplayStyle "table-row"
+
+        cell =
+            setDisplayStyle "table-cell"
+    in
+        table []
+            [ row [] <|
+                List.map (cell [] << List.singleton) <|
+                    List.concat
+                        [ [ text "Trade:" ]
+                        , List.map
+                            (text << toString << flip lookupMaterial m.basket)
+                            allFruits
+                        ]
+            , row
+                []
+              <|
+                List.map (cell [] << List.singleton) <|
+                    List.concat
+                        [ [ text "" ]
+                        , List.map
+                            (\fr ->
+                                button
+                                    [ onClick (MoveToBasket fr 1)
+                                    , disabled
+                                        (Nothing == move fr 1 inv m.basket)
+                                    ]
+                                    [ text "^" ]
+                            )
+                            allFruits
+                        ]
+            , row
+                []
+              <|
+                List.map (cell [] << List.singleton) <|
+                    List.concat
+                        [ [ text "" ]
+                        , List.map
+                            (\fr ->
+                                button
+                                    [ onClick (MoveToBasket fr -1)
+                                    , disabled
+                                        (Nothing == move fr -1 inv m.basket)
+                                    ]
+                                    [ text "v" ]
+                            )
+                            allFruits
+                        ]
+            , row
+                []
+              <|
+                List.map (cell [] << List.singleton) <|
+                    List.concat
+                        [ [ text "Inv:" ]
+                        , List.map
+                            (text << toString << flip lookupMaterial inv)
+                            allFruits
+                        ]
+            ]
 
 
 productionView : Material Int -> ProductionModel -> Html ProductionMsg

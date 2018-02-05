@@ -21,8 +21,8 @@ type ReadyMsg
 
 
 type TradeMsg
-    = -- [tmp]
-      Trade
+    = Yield
+    | MoveToBasket Fruit Int
 
 
 type ProductionMsg
