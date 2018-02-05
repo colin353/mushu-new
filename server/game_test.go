@@ -190,6 +190,7 @@ func TestAuctionPhases(t *testing.T) {
 	expected.Broadcast(NewSetClockMessage(AuctionBidTime))
 
 	expected.Broadcast(NewBidUpdatedMessage(10, user.Name()))
+	expected.Broadcast(NewSetClockMessage(AuctionBidTime))
 	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
 	expected.Broadcast(NewSetClockMessage(AuctionBidTime))
 
