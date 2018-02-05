@@ -1,6 +1,7 @@
 module Model exposing (..)
 
 import BaseType exposing (..)
+import Card exposing (Card)
 import Material exposing (Fruit, Material)
 import Timer exposing (Timer)
 import Time exposing (Time)

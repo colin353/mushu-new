@@ -2,6 +2,7 @@ module Update exposing (update, subscriptions)
 
 import BaseType exposing (..)
 import Material exposing (Material)
+import Card
 import Model exposing (..)
 import Msg exposing (..)
 import Api
@@ -354,8 +355,7 @@ handleAction action model =
                     ( { m
                         | auction =
                             Just
-                                { -- [tmp] bogus card
-                                  card = blueberryJam
+                                { card = Card.fromSeed seed
                                 , highestBid = Nothing
                                 , timer = Timer.init (5 * Time.second)
                                 }

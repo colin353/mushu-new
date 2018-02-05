@@ -16,16 +16,3 @@ type alias CardSeed =
 
 type alias Price =
     Material Float
-
-
-type alias Card =
-    { name : String
-    , startingBid : Int
-    }
-
-
-blueberryJam : Card
-blueberryJam =
-    { name = "Blueberry Jam"
-    , startingBid = 3
-    }

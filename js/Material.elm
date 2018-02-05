@@ -1,6 +1,6 @@
 module Material
     exposing
-        ( Fruit
+        ( Fruit(..)
         , allFruits
         , fruitFromString
         , Material
@@ -8,9 +8,11 @@ module Material
         , create
         , empty
         , toList
+        , values
         , map
         , map2
         , traverseMaybe
+        , set
         , update
         , tryUpdate
         , fold
@@ -91,6 +93,11 @@ toList mat =
     List.map (\fr -> ( fr, lookup fr mat )) allFruits
 
 
+values : Material a -> List a
+values =
+    toList >> List.map Tuple.second
+
+
 map : (Fruit -> a -> b) -> Material a -> Material b
 map f mat =
     create (\fr -> f fr (lookup fr mat))
@@ -122,6 +129,11 @@ traverseMaybe mat =
             (lookup Blueberry mat)
         )
         allFruits
+
+
+set : Fruit -> a -> Material a -> Material a
+set fruit =
+    update fruit << always
 
 
 update : Fruit -> (a -> a) -> Material a -> Material a
