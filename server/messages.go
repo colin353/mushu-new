@@ -270,18 +270,18 @@ func NewSetNameMessage(name string) SetNameMessage {
 }
 
 type ApplyEffectMessage struct {
-	Action        string                    `json:"action"`
-	YieldModifier map[CommodityType]float64 `json:"yield_modifier"`
-	RateModifier  map[CommodityType]float64 `json:"rate_modifier"`
-	Timeout       int64
+	Action            string                    `json:"action"`
+	YieldRateModifier map[CommodityType]float64 `json:"yield_rate_modifier"`
+	PriceModifier     map[CommodityType]float64 `json:"price_modifier"`
+	Timeout           int64
 }
 
 func NewApplyEffectMessage(yield, rate map[CommodityType]float64, timeout int64) Message {
 	return ApplyEffectMessage{
-		Action:        string(ApplyEffectAction),
-		YieldModifier: yield,
-		RateModifier:  rate,
-		Timeout:       timeout,
+		Action:            string(ApplyEffectAction),
+		YieldRateModifier: yield,
+		PriceModifier:     rate,
+		Timeout:           timeout,
 	}
 }
 

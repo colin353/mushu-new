@@ -75,10 +75,10 @@ func (g *Game) Tick(time time.Duration) {
 }
 
 func (g *Game) ApplyEffects(msg ApplyEffectMessage) {
-	g.Market.ApplyModifier(msg.RateModifier)
+	g.Market.ApplyModifier(msg.PriceModifier)
 
 	for _, c := range AllCommodities {
-		g.Yield[c] *= msg.YieldModifier[c]
+		g.Yield[c] *= msg.YieldRateModifier[c]
 	}
 
 	// Inform the consumers that the effects are updated.
