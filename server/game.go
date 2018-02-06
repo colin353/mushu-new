@@ -90,6 +90,7 @@ func (g *Game) RecieveMessage(user User, message Message) {
 	switch msg := message.(type) {
 	case JoinMessage:
 		user.Message(NewWelcomeMessage(g.name, string(g.state.Name())))
+		user.Message(NewEffectMessage(g.Yield))
 	case SetNameMessage:
 		user.SetName(msg.Name)
 	case ApplyEffectMessage:

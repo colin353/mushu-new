@@ -78,6 +78,8 @@ func (s *WaitingController) RecieveMessage(u User, m Message) {
 		s.ready[u] = false
 	case LeaveMessage:
 		delete(s.ready, u)
+	default:
+		return
 	}
 
 	// Inform all of the clients of the ready state of the other

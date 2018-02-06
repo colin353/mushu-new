@@ -276,7 +276,8 @@ func TestEffectsBroadcast(t *testing.T) {
 		"corn":      1.00,
 	}
 
-	userA := &TestUser{}
+	userA := &TestUser{name: "Faker"}
+
 	game.RecieveMessage(userA, NewApplyEffectMessage(yield, rate, 100))
 	game.RecieveMessage(userA, NewApplyEffectMessage(yield, rate, 100))
 
@@ -285,6 +286,8 @@ func TestEffectsBroadcast(t *testing.T) {
 	expected.Broadcast(NewEffectMessage(yield_squared))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
+		t.Errorf("Got: %v", connection.broadcastLog)
+		t.Errorf("Want: %v", expected.broadcastLog)
 		t.Errorf("Auction bidding: ", diff)
 	}
 }
