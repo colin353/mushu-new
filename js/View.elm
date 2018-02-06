@@ -94,7 +94,7 @@ readyView m =
         [ div [ class "card-text" ] [ text "Set your name:" ]
         , input [ placeholder "Anonymous", onInput NameInputChange ] []
         , div [ class "card-text" ] [ text "Waiting for players..." ]
-        , button [ onClick Ready ] [ text "Ready" ]
+        , button [ onClick (Ready True) ] [ text "Ready" ]
         ]
 
 

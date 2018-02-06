@@ -17,7 +17,7 @@ type Msg
 
 
 type ReadyMsg
-    = Ready
+    = Ready Bool
     | NameInputChange String
 
 

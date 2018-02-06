@@ -22,6 +22,7 @@ type Action
     | SaleCompleted Int Fruit Float
     | TradeCompleted (Material Int)
     | GameOver String
+    | PlayerInfoUpdated
 
 
 decodeMessage : String -> Result String Action
@@ -66,6 +67,9 @@ actionHelp a =
         "set_clock" ->
             D.map SetClock
                 (D.field "time" D.int)
+
+        "player_info_updated" ->
+            D.succeed PlayerInfoUpdated
 
         "auction_seed" ->
             D.map Auction <|
@@ -144,7 +148,7 @@ material a =
 
 type ServerAction
     = JoinGame String
-    | Ready
+    | Ready Bool
     | Bid Int
     | SetName String
     | Sell Fruit Int
@@ -168,8 +172,11 @@ encodeServerAction a =
                       ]
                     )
 
-                Ready ->
-                    ( "ready", [] )
+                Ready state ->
+                    ( "ready"
+                    , [ ( "ready", E.bool state )
+                      ]
+                    )
 
                 Bid x ->
                     ( "bid"

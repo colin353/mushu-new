@@ -39,9 +39,9 @@ update msg model =
     case msg of
         ReadyMsg msg ->
             case msg of
-                Ready ->
+                Ready state ->
                     ( model
-                    , Server.send model Api.Ready
+                    , Server.send model (Api.Ready True)
                     )
 
                 NameInputChange name ->
@@ -431,6 +431,9 @@ handleAction action model =
                 model
 
         Api.GameOver winner ->
+            ( model, Cmd.none )
+
+        Api.PlayerInfoUpdated ->
             ( model, Cmd.none )
 
 
