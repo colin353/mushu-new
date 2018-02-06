@@ -90,7 +90,7 @@ actionHelp a =
         "effect_updated" ->
             D.map EffectUpdated <|
                 D.map (\yrm -> { yieldRateModifier = yrm })
-                    (D.field "yieldRateModifier" (material D.float))
+                    (D.field "yield_rate_modifier" (material D.float))
 
         "sale_completed" ->
             D.map3 SaleCompleted
