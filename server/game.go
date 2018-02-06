@@ -37,10 +37,16 @@ func NewGame(name string, connection GameConnection) *Game {
 		connection: connection,
 		state:      nil,
 		Market:     NewMarket(),
+		Yield:      make(map[CommodityType]float64),
 		MinPlayers: MinPlayers,
 	}
 	game.state = NewStateController(&game, WaitingState)
 	game.state.Begin()
+
+	for _, c := range AllCommodities {
+		game.Yield[c] = 1.00
+	}
+
 	return &game
 }
 
@@ -76,7 +82,7 @@ func (g *Game) ApplyEffects(msg ApplyEffectMessage) {
 	}
 
 	// Inform the consumers that the effects are updated.
-	g.connection.Broadcast(NewEffectMessage(Yield))
+	g.connection.Broadcast(NewEffectMessage(g.Yield))
 }
 
 // RecieveMessage is called when a user sends a message to the server.

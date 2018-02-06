@@ -209,3 +209,42 @@ func TestAuctionPhases(t *testing.T) {
 		t.Errorf("Auction bidding: ", diff)
 	}
 }
+
+func TestEffectsBroadcast(t *testing.T) {
+	connection := TestConnection{}
+	game := NewGame("g", &connection)
+	game.MinPlayers = 2
+
+	yield := map[CommodityType]float64{
+		"tomato":    1.00,
+		"purple":    2.00,
+		"blueberry": 3.00,
+		"corn":      0.50,
+	}
+
+	yield_squared := map[CommodityType]float64{
+		"tomato":    1.00,
+		"purple":    4.00,
+		"blueberry": 9.00,
+		"corn":      0.25,
+	}
+
+	rate := map[CommodityType]float64{
+		"tomato":    1.00,
+		"purple":    2.00,
+		"blueberry": 2.00,
+		"corn":      1.00,
+	}
+
+	userA := &TestUser{}
+	game.RecieveMessage(userA, NewApplyEffectMessage(yield, rate, 100))
+	game.RecieveMessage(userA, NewApplyEffectMessage(yield, rate, 100))
+
+	expected := TestConnection{}
+	expected.Broadcast(NewEffectMessage(yield))
+	expected.Broadcast(NewEffectMessage(yield_squared))
+
+	if diff := CompareBroadcastLog(connection, expected); diff != "" {
+		t.Errorf("Auction bidding: ", diff)
+	}
+}
