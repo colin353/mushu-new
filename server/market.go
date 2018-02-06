@@ -18,12 +18,18 @@ var AllCommodities []CommodityType = []CommodityType{Tomato, Blueberry, Corn, Pu
 
 type Market struct {
 	Commodities map[CommodityType]*Commodity
+	Modifier    map[CommodityType]float64
 }
 
 func NewMarket() Market {
-	m := Market{Commodities: make(map[CommodityType]*Commodity)}
+	m := Market{
+		Commodities: make(map[CommodityType]*Commodity),
+		Modifier:    make(map[CommodityType]float64),
+	}
 
 	for _, c := range AllCommodities {
+		m.Modifier[c] = 1.00
+
 		m.Commodities[c] = &Commodity{
 			Name:   string(c),
 			Supply: 100,
@@ -35,10 +41,16 @@ func NewMarket() Market {
 	return m
 }
 
+func (m *Market) ApplyModifier(modifier map[CommodityType]float64) {
+	for _, c := range AllCommodities {
+		m.Modifier[c] *= modifier[c]
+	}
+}
+
 func (m *Market) Prices() map[CommodityType]float64 {
 	prices := make(map[CommodityType]float64)
 	for _, c := range AllCommodities {
-		prices[c] = m.Commodities[c].Price()
+		prices[c] = m.Modifier[c] * m.Commodities[c].Price()
 	}
 
 	return prices
@@ -50,7 +62,7 @@ func (m *Market) Sell(t CommodityType, quantity int64) (float64, error) {
 	if !ok {
 		return 0, fmt.Errorf("Invalid commodity type: %v", t)
 	}
-	return c.Sell(quantity), nil
+	return m.Modifier[t] * c.Sell(quantity), nil
 }
 
 type Commodity struct {

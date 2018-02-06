@@ -19,6 +19,7 @@ const (
 	PriceUpdatedAction     MessageAction = "price_updated"
 	BidUpdatedAction       MessageAction = "bid_updated"
 	SetClockAction         MessageAction = "set_clock"
+	EffectAction           MessageAction = "effect_updated"
 
 	// Server-to-client messages
 	AuctionWonAction     MessageAction = "auction_won"
@@ -26,13 +27,14 @@ const (
 	SaleCompletedAction  MessageAction = "sale_completed"
 
 	// Client messages
-	BidAction     MessageAction = "bid"
-	ReadyAction   MessageAction = "ready"
-	JoinAction    MessageAction = "join"
-	LeaveAction   MessageAction = "leave"
-	TradeAction   MessageAction = "trade"
-	SellAction    MessageAction = "sell"
-	SetNameAction MessageAction = "set_name"
+	BidAction         MessageAction = "bid"
+	ReadyAction       MessageAction = "ready"
+	JoinAction        MessageAction = "join"
+	LeaveAction       MessageAction = "leave"
+	TradeAction       MessageAction = "trade"
+	SellAction        MessageAction = "sell"
+	SetNameAction     MessageAction = "set_name"
+	ApplyEffectAction MessageAction = "apply_effect"
 
 	// Special debug-only actions
 	TickAction MessageAction = "tick"
@@ -101,6 +103,18 @@ func NewBidUpdatedMessage(bid int, winner string) Message {
 		Action: string(BidUpdatedAction),
 		Bid:    bid,
 		Winner: winner,
+	}
+}
+
+type EffectMessage struct {
+	Action string                    `json:"action"`
+	Yield  map[CommodityType]float64 `json:"yield_rate_modifier"`
+}
+
+func NewEffectMessage(yield map[CommodityType]float64) Message {
+	return EffectMessage{
+		Action: string(EffectAction),
+		Yield:  yield,
 	}
 }
 
@@ -255,6 +269,22 @@ func NewSetNameMessage(name string) SetNameMessage {
 	}
 }
 
+type ApplyEffectMessage struct {
+	Action        string                    `json:"action"`
+	YieldModifier map[CommodityType]float64 `json:"yield_modifier"`
+	RateModifier  map[CommodityType]float64 `json:"rate_modifier"`
+	Timeout       int64
+}
+
+func NewApplyEffectMessage(yield, rate map[CommodityType]float64, timeout int64) Message {
+	return ApplyEffectMessage{
+		Action:        string(ApplyEffectAction),
+		YieldModifier: yield,
+		RateModifier:  rate,
+		Timeout:       timeout,
+	}
+}
+
 // DecodeMessage takes data in bytes, determines which message it corresponds
 // to, and decodes it to the appropriate type.
 func DecodeMessage(data []byte) (Message, error) {
@@ -322,6 +352,10 @@ func DecodeMessage(data []byte) (Message, error) {
 		message = m
 	case string(SetNameAction):
 		m := SetNameMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(ApplyEffectAction):
+		m := ApplyEffectMessage{}
 		err = json.Unmarshal(data, &m)
 		message = m
 	default:
