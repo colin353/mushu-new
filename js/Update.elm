@@ -42,9 +42,9 @@ update msg model =
     case msg of
         ReadyMsg msg ->
             case msg of
-                Ready ->
+                Ready _ ->
                     ( model
-                    , Server.send model Api.Ready
+                    , Server.send model (Api.Ready True)
                     )
 
                 NameInputChange name ->
@@ -188,6 +188,22 @@ updateIfAuction upd model =
                 ( model, Cmd.none )
 
 
+tryUpdateReady :
+    (ReadyModel -> ( ReadyModel, Cmd Msg ))
+    -> Model
+    -> ( Model, Cmd Msg )
+tryUpdateReady upd =
+    updateIfReady <|
+        \m model ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = ReadyStage newM }
+                , cmd
+                )
+
+
 tryUpdateAuction :
     (AuctionModel -> ( AuctionModel, Cmd Msg ))
     -> Model
@@ -202,6 +218,27 @@ tryUpdateAuction upd =
                 ( { model | stage = AuctionStage newM }
                 , cmd
                 )
+
+
+updateIfReady :
+    (ReadyModel -> Model -> ( Model, Cmd Msg ))
+    -> Model
+    -> ( Model, Cmd Msg )
+updateIfReady upd model =
+    case model.stage of
+        ReadyStage m ->
+            upd m model
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model.stage
+                )
+                identity
+            )
+                ( model, Cmd.none )
 
 
 updateIfTrade :
@@ -461,6 +498,11 @@ handleAction action model =
 
         Api.GameOver winner ->
             ( model, Cmd.none )
+
+        Api.PlayerInfoUpdated info ->
+            tryUpdateReady
+                (\m -> ( { m | playerInfo = info }, Cmd.none ))
+                model
 
 
 changeStage : StageType -> Model -> ( Model, Cmd Msg )

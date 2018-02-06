@@ -18,7 +18,8 @@ type Msg
 
 
 type ReadyMsg
-    = Ready
+    = -- [tmp] unused right now
+      Ready Bool
     | NameInputChange String
 
 

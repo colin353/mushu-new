@@ -100,7 +100,7 @@ func TestReadyMechanism(t *testing.T) {
 
 	userA := &TestUser{}
 	userB := &TestUser{}
-	game.RecieveMessage(userA, NewReadyMessage())
+	game.RecieveMessage(userA, NewReadyMessage(true))
 
 	if game.state.Name() != WaitingState {
 		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), WaitingState)
@@ -108,18 +108,58 @@ func TestReadyMechanism(t *testing.T) {
 
 	// If the user posts ready again, it shouldn't work, since
 	// we need two different players.
-	game.RecieveMessage(userA, NewReadyMessage())
+	game.RecieveMessage(userA, NewReadyMessage(true))
 	if game.state.Name() != WaitingState {
 		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), WaitingState)
 	}
 
 	// Now the game should start.
-	game.RecieveMessage(userB, NewReadyMessage())
+	game.RecieveMessage(userB, NewReadyMessage(true))
 	if game.state.Name() != ProductionState {
 		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
 	}
+
 }
 
+// This test requires a better implementation of unordered-equals
+// in order to verify the correct PlayerInfo output. I'm disabling
+// the test for now, until I implement a better way of comparing
+// output broadcasts.
+func DontTestPlayerInfoMessage(t *testing.T) {
+	connection := TestConnection{}
+	game := NewGame("g", &connection)
+	game.MinPlayers = 2
+
+	userA := &TestUser{name: "George"}
+	userB := &TestUser{name: "Paul"}
+	game.RecieveMessage(userB, NewJoinMessage())
+	game.RecieveMessage(userA, NewReadyMessage(true))
+	game.RecieveMessage(userA, NewReadyMessage(false))
+
+	expected := TestConnection{}
+
+	info := []PlayerInfo{
+		{Name: "Paul", Ready: false},
+	}
+	expected.Broadcast(NewPlayerInfoUpdateMessage(info))
+
+	info = []PlayerInfo{
+		{Name: "Paul", Ready: false},
+		{Name: "George", Ready: true},
+	}
+	expected.Broadcast(NewPlayerInfoUpdateMessage(info))
+
+	info = []PlayerInfo{
+		{Name: "Paul", Ready: false},
+		{Name: "George", Ready: false},
+	}
+	expected.Broadcast(NewPlayerInfoUpdateMessage(info))
+
+	if diff := CompareBroadcastLog(connection, expected); diff != "" {
+		t.Errorf("PlayerInfoMessage: %v", diff)
+	}
+
+}
 func TestReadyMechanismWithMorePlayers(t *testing.T) {
 	connection := TestConnection{}
 	game := NewGame("g", &connection)
@@ -128,16 +168,16 @@ func TestReadyMechanismWithMorePlayers(t *testing.T) {
 	userA := &TestUser{}
 	userB := &TestUser{}
 	userC := &TestUser{}
-	game.RecieveMessage(userA, NewReadyMessage())
+	game.RecieveMessage(userA, NewReadyMessage(true))
 	game.RecieveMessage(userB, NewJoinMessage())
-	game.RecieveMessage(userC, NewReadyMessage())
+	game.RecieveMessage(userC, NewReadyMessage(true))
 
 	// Since user B has joined but is not ready, game shouldn't start.
 	if game.state.Name() != WaitingState {
 		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), WaitingState)
 	}
 
-	game.RecieveMessage(userB, NewReadyMessage())
+	game.RecieveMessage(userB, NewReadyMessage(true))
 	if game.state.Name() != ProductionState {
 		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
 	}
@@ -151,9 +191,9 @@ func TestReadyMechanismWithLeaver(t *testing.T) {
 	userA := &TestUser{}
 	userB := &TestUser{}
 	userC := &TestUser{}
-	game.RecieveMessage(userA, NewReadyMessage())
+	game.RecieveMessage(userA, NewReadyMessage(true))
 	game.RecieveMessage(userB, NewJoinMessage())
-	game.RecieveMessage(userC, NewReadyMessage())
+	game.RecieveMessage(userC, NewReadyMessage(true))
 
 	// Since user B has joined but is not ready, game shouldn't start.
 	if game.state.Name() != WaitingState {

@@ -20,6 +20,7 @@ const (
 	BidUpdatedAction       MessageAction = "bid_updated"
 	SetClockAction         MessageAction = "set_clock"
 	EffectAction           MessageAction = "effect_updated"
+	PlayerInfoUpdateAction MessageAction = "player_info_updated"
 
 	// Server-to-client messages
 	AuctionWonAction     MessageAction = "auction_won"
@@ -130,6 +131,23 @@ func NewSetClockMessage(t time.Duration) Message {
 	}
 }
 
+type PlayerInfo struct {
+	Name  string `json:"name"`
+	Ready bool   `json:"ready"`
+}
+
+type PlayerInfoUpdateMessage struct {
+	Action string       `json:"action"`
+	Info   []PlayerInfo `json:"info"`
+}
+
+func NewPlayerInfoUpdateMessage(info []PlayerInfo) Message {
+	return PlayerInfoUpdateMessage{
+		Action: string(PlayerInfoUpdateAction),
+		Info:   info,
+	}
+}
+
 // Server-to-client messages:
 
 type TradeCompletedMessage struct {
@@ -209,10 +227,14 @@ func NewAuctionWonMessage() Message {
 
 type ReadyMessage struct {
 	Action string `json:"action"`
+	Ready  bool   `json:"ready"`
 }
 
-func NewReadyMessage() Message {
-	return ReadyMessage{string(ReadyAction)}
+func NewReadyMessage(ready bool) Message {
+	return ReadyMessage{
+		Action: string(ReadyAction),
+		Ready:  ready,
+	}
 }
 
 type JoinMessage struct {

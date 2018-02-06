@@ -18,6 +18,12 @@ type alias Price =
     Material Float
 
 
+type alias PlayerInfo =
+    { name : String
+    , ready : Bool
+    }
+
+
 type Uber number
     = Finite number
     | Infinite

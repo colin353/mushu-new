@@ -5,6 +5,7 @@ import Card exposing (Card)
 import Material exposing (Fruit, Material)
 import Timer exposing (Timer)
 import Time exposing (Time)
+import Api
 
 
 type alias Model =
@@ -32,6 +33,7 @@ type Stage
 
 type alias ReadyModel =
     { ready : Bool
+    , playerInfo : List PlayerInfo
     }
 
 
@@ -86,7 +88,9 @@ initModel hostname =
 
 initReadyModel : ReadyModel
 initReadyModel =
-    { ready = False }
+    { ready = False
+    , playerInfo = []
+    }
 
 
 initProductionModel : ProductionModel
