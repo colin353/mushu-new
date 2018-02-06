@@ -4,6 +4,8 @@ import BaseType exposing (..)
 import Model exposing (..)
 import Msg exposing (Msg)
 import Material exposing (Fruit, Material)
+import Api
+import Server
 import Array exposing (Array)
 
 
@@ -69,11 +71,20 @@ tryApplyCardEffect index model =
                                            )
                                         |> Array.toList
                         }
+
+                    toServer : Model -> Cmd Msg
+                    toServer =
+                        flip Server.send
+                            (Api.ApplyEffect
+                                { yieldRateModifier = card.yieldRateModifier
+                                , priceModifier = card.priceModifier
+                                }
+                            )
                 in
                     model
                         |> removeFromInv
                         |> Result.andThen (removeCharge >> Result.Ok)
-                        |> Result.map (\m -> ( m, Cmd.none ))
+                        |> Result.map (\m -> ( m, toServer m ))
             )
 
 

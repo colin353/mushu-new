@@ -151,6 +151,10 @@ type ServerAction
     | Sell Fruit Int
     | Trade (Material Int)
     | ActivateCard CardSeed
+    | ApplyEffect
+        { yieldRateModifier : Material Float
+        , priceModifier : Material Float
+        }
 
 
 encodeToMessage : ServerAction -> String
@@ -190,13 +194,27 @@ encodeServerAction a =
 
                 Trade mat ->
                     ( "trade"
-                    , [ ( "materials", E.string (E.encode 0 (encodeMaterial mat)) )
+                    , [ ( "materials"
+                        , E.string
+                            (E.encode 0 (encodeMaterial E.int mat))
+                        )
                       ]
                     )
 
                 {- [todo] Finish implementing -}
                 ActivateCard seed ->
                     ( "activate_card", [] )
+
+                ApplyEffect { yieldRateModifier, priceModifier } ->
+                    ( "apply_effect"
+                    , [ ( "yield_rate_modifier"
+                        , encodeMaterial E.float yieldRateModifier
+                        )
+                      , ( "price_modifier"
+                        , encodeMaterial E.float priceModifier
+                        )
+                      ]
+                    )
     in
         E.object <|
             [ ( "action", E.string actionStr )
@@ -209,9 +227,9 @@ encodeFruit =
     toString >> String.toLower >> E.string
 
 
-encodeMaterial : Material Int -> E.Value
-encodeMaterial =
+encodeMaterial : (a -> E.Value) -> Material a -> E.Value
+encodeMaterial a =
     E.object
         << Material.fold
-            (\fr a -> (::) ( String.toLower (toString fr), E.int a ))
+            (\fr v -> (::) ( String.toLower (toString fr), a v ))
             []
