@@ -1,9 +1,12 @@
 module Update exposing (update, subscriptions)
 
 import BaseType exposing (..)
+import Material exposing (Material)
+import Card exposing (Card)
 import Model exposing (..)
 import Msg exposing (..)
 import Api
+import Timer
 import Helper
 import AnimationFrame
 import Time exposing (Time)
@@ -54,102 +57,7 @@ update msg model =
             tryUpdateAuction (updateAuction msg (Server.send model)) model
 
         TradeMsg msg ->
-            case msg of
-                Yield ->
-                    updateIfTrade
-                        (\_ model ->
-                            ( { model
-                                | inventory =
-                                    mapMaterial
-                                        (\fr ->
-                                            (+)
-                                                (lookupMaterial fr
-                                                    (yieldRate model.factories)
-                                                )
-                                        )
-                                        model.inventory
-                              }
-                            , Cmd.none
-                            )
-                        )
-                        model
-
-                MoveToBasket fruit count ->
-                    updateIfTrade
-                        (\m model ->
-                            case move fruit count model.inventory m.basket of
-                                Nothing ->
-                                    Debug.crash
-                                        "+/- buttons should be disabled"
-
-                                Just ( newInv, newBasket ) ->
-                                    tryUpdateTrade
-                                        (\m ->
-                                            ( { m | basket = newBasket }
-                                            , Cmd.none
-                                            )
-                                        )
-                                        { model | inventory = newInv }
-                        )
-                        model
-
-                EmptyBasket ->
-                    updateIfTrade
-                        (\m model ->
-                            tryUpdateTrade
-                                (\m ->
-                                    ( { m | basket = emptyMaterial }
-                                    , Cmd.none
-                                    )
-                                )
-                                { model
-                                    | inventory =
-                                        mapMaterial2 (always (+))
-                                            m.basket
-                                            model.inventory
-                                }
-                        )
-                        model
-
-                SellButton fruit ->
-                    case model.price of
-                        Just price ->
-                            ( { model
-                                | gold =
-                                    model.gold
-                                        + floor (lookupMaterial fruit price)
-                                , inventory =
-                                    case
-                                        tryUpdateMaterial fruit
-                                            (\x ->
-                                                let
-                                                    newX =
-                                                        x - 1
-                                                in
-                                                    if newX >= 0 then
-                                                        Just newX
-                                                    else
-                                                        Nothing
-                                            )
-                                            model.inventory
-                                    of
-                                        Nothing ->
-                                            Debug.crash
-                                                ("""Not enough item to sell.
-                                                    Sell button should've
-                                                    been disabled.""")
-
-                                        Just inv ->
-                                            inv
-                              }
-                            , Server.send model (Api.Sell fruit 1)
-                            )
-
-                        Nothing ->
-                            Debug.crash
-                                ("No price information."
-                                    ++ "Sell button should have been disabled."
-                                )
+            handleTradeMsg msg model
 
         ServerMsgReceived action ->
             case action of
@@ -172,6 +80,16 @@ update msg model =
             , Cmd.none
             )
 
+        CardActivated index ->
+            case
+                Helper.tryApplyCardEffect index model
+            of
+                Ok r ->
+                    r
+
+                Err e ->
+                    Debug.crash ("Card activation error: " ++ e)
+
         Shake ->
             tryUpdateTrade
                 (\m ->
@@ -180,7 +98,7 @@ update msg model =
                 model
 
         UpdateTimer tick ->
-            ( { model | stage = updateTimerUsing (updateTimer tick) model.stage }
+            ( { model | stage = updateTimer (Timer.update tick) model.stage }
             , Cmd.none
             )
 
@@ -361,6 +279,116 @@ tryUpdateTrade upd =
         )
 
 
+handleTradeMsg : TradeMsg -> Model -> ( Model, Cmd Msg )
+handleTradeMsg msg model =
+    case msg of
+        Yield ->
+            updateIfTrade
+                (\_ model ->
+                    ( { model
+                        | inventory =
+                            Material.map
+                                (\fr ->
+                                    (+)
+                                        (Material.lookup fr
+                                            (yieldRate model.factories)
+                                        )
+                                )
+                                model.inventory
+                      }
+                    , Cmd.none
+                    )
+                )
+                model
+
+        MoveToBasket fruit count ->
+            updateIfTrade
+                (\m model ->
+                    case Helper.move fruit count model.inventory m.basket of
+                        Nothing ->
+                            Debug.crash
+                                "+/- buttons should be disabled"
+
+                        Just ( newInv, newBasket ) ->
+                            tryUpdateTrade
+                                (\m ->
+                                    ( { m | basket = newBasket }
+                                    , Cmd.none
+                                    )
+                                )
+                                { model | inventory = newInv }
+                )
+                model
+
+        EmptyBasket ->
+            updateIfTrade
+                (\m model ->
+                    tryUpdateTrade
+                        (\m ->
+                            ( { m | basket = Material.empty }
+                            , Cmd.none
+                            )
+                        )
+                        { model
+                            | inventory =
+                                Material.map2 (always (+))
+                                    m.basket
+                                    model.inventory
+                        }
+                )
+                model
+
+        SellButton fruit ->
+            case model.price of
+                Just price ->
+                    ( { model
+                        | gold =
+                            model.gold
+                                + floor (Material.lookup fruit price)
+                        , inventory =
+                            case
+                                Material.tryUpdate fruit
+                                    (\x ->
+                                        let
+                                            newX =
+                                                x - 1
+                                        in
+                                            if newX >= 0 then
+                                                Just newX
+                                            else
+                                                Nothing
+                                    )
+                                    model.inventory
+                            of
+                                Nothing ->
+                                    Debug.crash
+                                        ("""Not enough item to sell.
+                                                    Sell button should've
+                                                    been disabled.""")
+
+                                Just inv ->
+                                    inv
+                      }
+                    , Server.send model (Api.Sell fruit 1)
+                    )
+
+                Nothing ->
+                    Debug.crash
+                        ("No price information."
+                            ++ "Sell button should have been disabled."
+                        )
+
+
+baseYieldRate : number
+baseYieldRate =
+    1
+
+
+yieldRate : Material Int -> Material Int
+yieldRate =
+    Material.map (always ((*) baseYieldRate))
+
+
 handleAction : Api.Action -> Model -> ( Model, Cmd Msg )
 handleAction action model =
     {- [todo] Finish implementing -}
@@ -374,10 +402,9 @@ handleAction action model =
                     ( { m
                         | auction =
                             Just
-                                { -- [tmp] bogus card
-                                  card = blueberryJam
+                                { card = Card.fromSeed seed
                                 , highestBid = Nothing
-                                , timer = startTimer (5 * Time.second)
+                                , timer = Timer.init (5 * Time.second)
                                 }
                       }
                     , Cmd.none
@@ -413,8 +440,8 @@ handleAction action model =
         Api.SetClock ms ->
             ( { model
                 | stage =
-                    updateTimerUsing
-                        (setTimeLeft (toFloat ms * Time.millisecond))
+                    updateTimer
+                        (Timer.setTimeLeft (toFloat ms * Time.millisecond))
                         model.stage
               }
             , Cmd.none
@@ -455,7 +482,7 @@ handleAction action model =
                 | gold = model.gold + floor (price * toFloat count)
                 , inventory =
                     {- [note] hides negative item error -}
-                    updateMaterial fruit
+                    Material.update fruit
                         (\c -> max 0 (c - count))
                         model.inventory
               }
@@ -500,7 +527,7 @@ changeStage stage model =
                     ProductionStage m ->
                         case m.selected of
                             Just selected ->
-                                updateMaterial selected
+                                Material.update selected
                                     ((+) 1)
                                     model.factories
 

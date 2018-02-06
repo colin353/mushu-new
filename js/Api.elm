@@ -7,6 +7,7 @@ module Api
         )
 
 import BaseType exposing (..)
+import Material exposing (Fruit, Material)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -131,7 +132,7 @@ fruit =
     D.string
         |> D.andThen
             (\s ->
-                case fruitFromString s of
+                case Material.fruitFromString s of
                     Just fruit ->
                         D.succeed fruit
 
@@ -226,6 +227,6 @@ encodeFruit =
 encodeMaterial : Material Int -> E.Value
 encodeMaterial =
     E.object
-        << foldMaterial
+        << Material.fold
             (\fr a -> (::) ( String.toLower (toString fr), E.int a ))
             []
