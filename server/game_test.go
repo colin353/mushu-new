@@ -118,8 +118,37 @@ func TestReadyMechanism(t *testing.T) {
 	if game.state.Name() != ProductionState {
 		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
 	}
+
 }
 
+func TestPlayerInfoMessage(t *testing.T) {
+	connection := TestConnection{}
+	game := NewGame("g", &connection)
+	game.MinPlayers = 2
+
+	userA := &TestUser{name: "George"}
+	userB := &TestUser{name: "Paul"}
+	game.RecieveMessage(userB, NewJoinMessage())
+	game.RecieveMessage(userA, NewReadyMessage())
+
+	expected := TestConnection{}
+
+	info := []PlayerInfo{
+		{Name: "Paul", Ready: false},
+	}
+	expected.Broadcast(NewPlayerInfoUpdateMessage(info))
+
+	info = []PlayerInfo{
+		{Name: "Paul", Ready: false},
+		{Name: "George", Ready: true},
+	}
+	expected.Broadcast(NewPlayerInfoUpdateMessage(info))
+
+	if diff := CompareBroadcastLog(connection, expected); diff != "" {
+		t.Errorf("PlayerInfoMessage: %v", diff)
+	}
+
+}
 func TestReadyMechanismWithMorePlayers(t *testing.T) {
 	connection := TestConnection{}
 	game := NewGame("g", &connection)

@@ -74,13 +74,23 @@ func (s *WaitingController) RecieveMessage(u User, m Message) {
 	switch m.(type) {
 	case ReadyMessage:
 		s.ready[u] = true
-		s.proceedIfReady()
 	case JoinMessage:
 		s.ready[u] = false
 	case LeaveMessage:
 		delete(s.ready, u)
-		s.proceedIfReady()
 	}
+
+	// Inform all of the clients of the ready state of the other
+	// clients.
+	var info []PlayerInfo
+	for u, ready := range s.ready {
+		info = append(info, PlayerInfo{
+			Name:  u.Name(),
+			Ready: ready,
+		})
+	}
+	s.game.connection.Broadcast(NewPlayerInfoUpdateMessage(info))
+	s.proceedIfReady()
 }
 
 func (s *WaitingController) proceedIfReady() {
