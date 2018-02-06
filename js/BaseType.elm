@@ -16,8 +16,7 @@ type alias CardSeed =
 
 type alias Price =
     Material Float
-    
-    
+
 
 type alias PlayerInfo =
     { name : String
