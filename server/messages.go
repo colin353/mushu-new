@@ -213,10 +213,14 @@ func NewAuctionWonMessage() Message {
 
 type ReadyMessage struct {
 	Action string `json:"action"`
+	Ready  bool   `json:"ready"`
 }
 
-func NewReadyMessage() Message {
-	return ReadyMessage{string(ReadyAction)}
+func NewReadyMessage(ready bool) Message {
+	return ReadyMessage{
+		Action: string(ReadyAction),
+		Ready:  ready,
+	}
 }
 
 type JoinMessage struct {
