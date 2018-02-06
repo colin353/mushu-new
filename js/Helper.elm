@@ -94,7 +94,7 @@ arrayRemove i array =
         |> Maybe.map
             (always
                 (Array.append (Array.slice 0 i array)
-                    (Array.slice (i + 1) 0 array)
+                    (Array.slice (i + 1) (Array.length array) array)
                 )
             )
 
