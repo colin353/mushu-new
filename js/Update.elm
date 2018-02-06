@@ -250,14 +250,12 @@ handleTradeMsg msg model =
                 (\_ model ->
                     ( { model
                         | inventory =
-                            Material.map
-                                (\fr ->
-                                    (+)
-                                        (Material.lookup fr
-                                            (yieldRate model.factories)
-                                        )
-                                )
+                            Material.map2
+                                (always (+))
                                 model.inventory
+                                (totalYieldRate model.yieldRateModifier
+                                    model.factories
+                                )
                       }
                     , Cmd.none
                     )
@@ -342,19 +340,18 @@ handleTradeMsg msg model =
                         )
 
 
-baseYieldRate : number
+baseYieldRate : Material Float
 baseYieldRate =
-    1
+    Material.create (always 1)
 
 
-yieldRate : Material Int -> Material Int
-yieldRate =
-    Material.map (always ((*) baseYieldRate))
+totalYieldRate : Material Float -> Material Int -> Material Int
+totalYieldRate =
+    Material.map3 (always (\a b c -> floor (a * b) * c)) baseYieldRate
 
 
 handleAction : Api.Action -> Model -> ( Model, Cmd Msg )
 handleAction action model =
-    {- [todo] Finish implementing -}
     case action of
         Api.GameStateChanged stage ->
             changeStage stage model
@@ -439,6 +436,11 @@ handleAction action model =
 
         Api.PriceUpdated price ->
             ( { model | price = Just price }, Cmd.none )
+
+        Api.EffectUpdated { yieldRateModifier } ->
+            ( { model | yieldRateModifier = yieldRateModifier }
+            , Cmd.none
+            )
 
         Api.SaleCompleted count fruit price ->
             ( { model

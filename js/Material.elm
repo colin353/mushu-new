@@ -12,6 +12,7 @@ module Material
         , values
         , map
         , map2
+        , map3
         , traverseMaybe
         , set
         , update
@@ -117,6 +118,16 @@ map2 :
     -> Material c
 map2 f mat =
     map (\fr -> f fr (lookup fr mat))
+
+
+map3 :
+    (Fruit -> a -> b -> c -> d)
+    -> Material a
+    -> Material b
+    -> Material c
+    -> Material d
+map3 f mat =
+    map2 (\fr -> f fr (lookup fr mat))
 
 
 traverseMaybe : Material (Maybe a) -> Maybe (Material a)

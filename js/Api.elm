@@ -20,6 +20,9 @@ type Action
     | BidUpdated Int String
     | AuctionWon
     | PriceUpdated Price
+    | EffectUpdated
+        { yieldRateModifier : Material Float
+        }
     | SaleCompleted Int Fruit Float
     | TradeCompleted (Material Int)
     | GameOver String
@@ -83,6 +86,11 @@ actionHelp a =
         "price_updated" ->
             D.map PriceUpdated <|
                 D.field "prices" price
+
+        "effect_updated" ->
+            D.map EffectUpdated <|
+                D.map (\yrm -> { yieldRateModifier = yrm })
+                    (D.field "yieldRateModifier" (material D.float))
 
         "sale_completed" ->
             D.map3 SaleCompleted

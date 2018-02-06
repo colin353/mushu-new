@@ -14,6 +14,7 @@ type alias Model =
     , gold : Int
     , inventory : Material Int
     , factories : Material Int
+    , yieldRateModifier : Material Float
     , cards : List Card
     , price : Maybe Price
     , input : String
@@ -71,6 +72,10 @@ initModel hostname =
     , gold = 25
     , inventory = Material.empty
     , factories = Material.empty
+
+    -- [note] should perhaps use Maybe since
+    -- we are using this to represent server pushed vallue
+    , yieldRateModifier = Material.create (always 1)
     , cards = []
     , price = Nothing
     , input = ""
