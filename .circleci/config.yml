@@ -20,6 +20,7 @@ jobs:
       - run: cd js; sysconfcpus -n 2 elm-format --validate *.elm
         # Try to build the elm code.
       - run: cd js; sysconfcpus -n 2 elm make --yes Main.elm
+      - run: cd js; sysconfcpus -n 2 elm-test
 
   deploy:
     docker:
