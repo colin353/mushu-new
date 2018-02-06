@@ -22,7 +22,7 @@ type Action
     | SaleCompleted Int Fruit Float
     | TradeCompleted (Material Int)
     | GameOver String
-    | PlayerInfoUpdated
+    | PlayerInfoUpdated (List PlayerInfo)
 
 
 decodeMessage : String -> Result String Action
@@ -69,7 +69,15 @@ actionHelp a =
                 (D.field "time" D.int)
 
         "player_info_updated" ->
-            D.succeed PlayerInfoUpdated
+            D.map PlayerInfoUpdated
+                (D.field "info"
+                    (D.list
+                        (D.map2 PlayerInfo
+                            (D.field "name" D.string)
+                            (D.field "ready" D.bool)
+                        )
+                    )
+                )
 
         "auction_seed" ->
             D.map Auction <|

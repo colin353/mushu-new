@@ -37,6 +37,12 @@ type alias Card =
     }
 
 
+type alias PlayerInfo =
+    { name : String
+    , ready : Bool
+    }
+
+
 blueberryJam : Card
 blueberryJam =
     { name = "Blueberry Jam"

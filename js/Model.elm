@@ -2,6 +2,7 @@ module Model exposing (..)
 
 import BaseType exposing (..)
 import Time exposing (Time)
+import Api
 
 
 type alias Model =
@@ -28,6 +29,7 @@ type Stage
 
 type alias ReadyModel =
     { ready : Bool
+    , playerInfo : List PlayerInfo
     }
 
 
@@ -78,7 +80,9 @@ initModel hostname =
 
 initReadyModel : ReadyModel
 initReadyModel =
-    { ready = False }
+    { ready = False
+    , playerInfo = []
+    }
 
 
 initProductionModel : ProductionModel

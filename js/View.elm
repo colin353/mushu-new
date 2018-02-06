@@ -44,7 +44,6 @@ view model =
                           ]
                         ]
                     )
-              , div [] (List.map viewMessage (List.reverse model.messages))
               ]
             ]
 
@@ -95,6 +94,10 @@ readyView m =
         , input [ placeholder "Anonymous", onInput NameInputChange ] []
         , div [ class "card-text" ] [ text "Waiting for players..." ]
         , button [ onClick (Ready True) ] [ text "Ready" ]
+        , div [] <|
+            List.map
+                (\a -> div [] [ text (a.name ++ " " ++ toString a.ready) ])
+                m.playerInfo
         ]
 
 
