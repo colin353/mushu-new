@@ -91,15 +91,16 @@ toolbar m =
     div [] <|
         List.concat
             [ [ button [ onClick ToggleInventory ] [ text "Inventory" ] ]
-            , List.map
-                (\c ->
+            , List.indexedMap
+                (\i card ->
                     button
-                        [ onClick (CardActivated c)
-                        , disabled (Helper.isErr (Helper.tryApplyCardEffect c m))
+                        [ onClick (CardActivated i)
+                        , disabled
+                            (Helper.isErr (Helper.tryApplyCardEffect i m))
                         ]
                     <|
                         List.map (div [] << List.singleton)
-                            [ text c.name
+                            [ text card.name
                             , text
                                 << (++) "Cost: "
                                 << List.foldr (++) ""
@@ -108,11 +109,13 @@ toolbar m =
                                 List.filterMap
                                     (\( fr, c ) ->
                                         if c /= 0 then
-                                            Just <| toString c ++ Material.shorthand fr
+                                            Just <|
+                                                toString c
+                                                    ++ Material.shorthand fr
                                         else
                                             Nothing
                                     )
-                                    (Material.toList c.resourceCost)
+                                    (Material.toList card.resourceCost)
                             ]
                 )
                 m.cards

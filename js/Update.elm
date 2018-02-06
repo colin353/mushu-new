@@ -80,8 +80,10 @@ update msg model =
             , Cmd.none
             )
 
-        CardActivated card ->
-            case Helper.tryApplyCardEffect card model of
+        CardActivated index ->
+            case
+                Helper.tryApplyCardEffect index model
+            of
                 Ok r ->
                     r
 

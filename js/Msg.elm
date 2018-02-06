@@ -1,7 +1,6 @@
 module Msg exposing (..)
 
 import Material exposing (Fruit)
-import Card exposing (Card)
 import Time exposing (Time)
 import Api
 
@@ -13,7 +12,7 @@ type Msg
     | TradeMsg TradeMsg
     | ServerMsgReceived (Result String Api.Action)
     | ToggleInventory
-    | CardActivated Card
+    | CardActivated Int
     | UpdateTimer Time
     | Shake
 

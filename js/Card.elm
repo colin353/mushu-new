@@ -1,5 +1,6 @@
 module Card exposing (..)
 
+import BaseType exposing (..)
 import Material exposing (Fruit(..), Material)
 import Array
 
@@ -10,6 +11,7 @@ type alias Card =
     , yieldRateModifier : Material Float
     , priceModifier : Material Float
     , resourceCost : Material Int
+    , charge : Uber Int
     }
 
 
@@ -38,6 +40,7 @@ baseCard =
     , yieldRateModifier = noModifier
     , priceModifier = noModifier
     , resourceCost = Material.empty
+    , charge = Finite 1
     }
 
 

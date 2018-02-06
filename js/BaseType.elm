@@ -16,3 +16,18 @@ type alias CardSeed =
 
 type alias Price =
     Material Float
+
+
+type Uber number
+    = Finite number
+    | Infinite
+
+
+add : Uber number -> number -> Uber number
+add x y =
+    case x of
+        Finite z ->
+            Finite (z + y)
+
+        Infinite ->
+            Infinite
