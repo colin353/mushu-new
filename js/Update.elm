@@ -42,7 +42,7 @@ update msg model =
     case msg of
         ReadyMsg msg ->
             case msg of
-                Ready state ->
+                Ready _ ->
                     ( model
                     , Server.send model (Api.Ready True)
                     )
