@@ -6,13 +6,14 @@ import Card exposing (Card)
 import Model exposing (..)
 import Msg exposing (..)
 import Api
+import Server
+import Shake
 import Timer
 import Helper
 import AnimationFrame
 import Time exposing (Time)
+import Random
 import Debug
-import Server
-import Shake
 
 
 subscriptions : Model -> Sub Msg
@@ -101,6 +102,21 @@ update msg model =
             ( { model | stage = updateTimer (Timer.update tick) model.stage }
             , Cmd.none
             )
+
+        YieldRoll yield ->
+            updateIfTrade
+                (\_ model ->
+                    ( { model
+                        | inventory =
+                            Material.map2
+                                (always (+))
+                                model.inventory
+                                yield
+                      }
+                    , Cmd.none
+                    )
+                )
+                model
 
 
 updateProduction :
@@ -283,21 +299,42 @@ handleTradeMsg : TradeMsg -> Model -> ( Model, Cmd Msg )
 handleTradeMsg msg model =
     case msg of
         Yield ->
-            updateIfTrade
-                (\_ model ->
-                    ( { model
-                        | inventory =
+            let
+                roundAt : Float -> Float -> Int
+                roundAt p x =
+                    -- [note] only makes sense for 0 <= x <= 1
+                    -- mod first to generalize?
+                    if x < p then
+                        ceiling x
+                    else
+                        floor x
+
+                binary : Float -> Random.Generator Int
+                binary p =
+                    Random.float 0 1 |> Random.map (roundAt p)
+
+                yield : Random.Generator (Material Int)
+                yield =
+                    let
+                        matRandom =
                             Material.map2
-                                (always (+))
-                                model.inventory
-                                (totalYieldRate model.yieldRateModifier
-                                    model.factories
+                                (always
+                                    (\p c ->
+                                        binary p
+                                            |> Random.list c
+                                            |> Random.map List.sum
+                                    )
                                 )
-                      }
-                    , Cmd.none
-                    )
-                )
-                model
+                                model.yieldRateModifier
+                                model.factories
+                    in
+                        Random.map4 Material
+                            matRandom.blueberry
+                            matRandom.tomato
+                            matRandom.corn
+                            matRandom.purple
+            in
+                ( model, Random.generate YieldRoll yield )
 
         MoveToBasket fruit count ->
             updateIfTrade

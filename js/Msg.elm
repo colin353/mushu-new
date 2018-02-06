@@ -1,6 +1,6 @@
 module Msg exposing (..)
 
-import Material exposing (Fruit)
+import Material exposing (Fruit, Material)
 import Time exposing (Time)
 import Api
 
@@ -15,6 +15,7 @@ type Msg
     | CardActivated Int
     | UpdateTimer Time
     | Shake
+    | YieldRoll (Material Int)
 
 
 type ReadyMsg
