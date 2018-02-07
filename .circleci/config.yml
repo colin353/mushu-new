@@ -37,9 +37,9 @@ jobs:
       - run: docker push colinmerkel/mushu
         # Update the server's docker image.
       - run: echo $GCP_TOKEN | base64 --decode --ignore-garbage > ${HOME}/gcloud-key.json
-      - run: ~/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file=${HOME}/gcloud-key.json
-      - run: ~/google-cloud-sdk/bin/gcloud config set project mushu-194218
-      - run: ~/google-cloud-sdk/bin/gcloud compute ssh instance-1 -- docker pull docker.io/colinmerkel/mushu; docker stop instance-1; docker start instance-1
+      - run: ~/google-cloud-sdk/bin/gcloud -q auth activate-service-account --key-file=${HOME}/gcloud-key.json
+      - run: ~/google-cloud-sdk/bin/gcloud -q config set project mushu-194218
+      - run: ~/google-cloud-sdk/bin/gcloud -q compute ssh instance-1 -- docker pull docker.io/colinmerkel/mushu; docker stop instance-1; docker start instance-1
 workflows:
   version: 2
   build_deploy:
