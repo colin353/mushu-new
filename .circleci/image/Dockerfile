@@ -20,3 +20,5 @@ RUN npm install -g elm-format
 RUN git clone https://github.com/obmarg/libsysconfcpus.git;
 RUN cd libsysconfcpus && ./configure && make && make install && cd ../
 
+# Install the `gloud` utility.
+RUN curl -sSL https://sdk.cloud.google.com | bash
