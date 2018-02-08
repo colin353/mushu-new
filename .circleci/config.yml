@@ -40,7 +40,7 @@ jobs:
       - run: echo $GCP_TOKEN | base64 --decode --ignore-garbage > ${HOME}/gcloud-key.json
       - run: ~/google-cloud-sdk/bin/gcloud -q auth activate-service-account --key-file=${HOME}/gcloud-key.json
       - run: ~/google-cloud-sdk/bin/gcloud -q config set project mushu-194218
-      - run: ~/google-cloud-sdk/bin/gcloud -q compute ssh --zone=us-east1-b colin@instance-1 -- 'docker pull docker.io/colinmerkel/mushu; docker stop instance-1; docker start instance-1'
+      - run: ~/google-cloud-sdk/bin/gcloud -q compute ssh --zone=us-east1-b colin@instance-1 -- 'docker pull docker.io/colinmerkel/mushu; docker stop instance-1; docker rm instance-1; docker run -d --name=instance-1 --restart=always -p 80:80 docker.io/colinmerkel/mushu'
 workflows:
   version: 2
   build_deploy:
