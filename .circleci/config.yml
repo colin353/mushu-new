@@ -51,4 +51,4 @@ workflows:
             - build
           filters:
             branches:
-              only: gcp2
+              only: master
