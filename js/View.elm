@@ -49,27 +49,39 @@ view model =
             ]
 
 
+icon : String -> String -> Html Msg
+icon class_name icon_name =
+    i [ class ("material-icons " ++ class_name) ] [ text icon_name ]
+
+
 topBar : Model -> Html Msg
 topBar model =
     div [ class "heading" ]
-        [ div [] [ text "mushu: test" ]
-        , div [] <|
-            case
-                timer model.stage
-            of
-                Just timer ->
-                    [ text
-                        (toString
-                            << floor
-                            << Time.inSeconds
-                            << Timer.timeLeft
-                         <|
-                            timer
-                        )
-                    ]
+        [ icon "link-icon" "link"
+        , div [ class "game-title" ] [ text "mushu: test" ]
+        , div [ class "timer" ]
+            (List.concat
+                [ case
+                    timer model.stage
+                  of
+                    Just timer ->
+                        [ div [ class "timer-text" ]
+                            [ text
+                                (toString
+                                    << round
+                                    << Time.inSeconds
+                                    << Timer.timeLeft
+                                 <|
+                                    timer
+                                )
+                            ]
+                        , icon "timer-icon" "timer"
+                        ]
 
-                Nothing ->
-                    []
+                    Nothing ->
+                        []
+                ]
+            )
         ]
 
 
@@ -121,17 +133,34 @@ toolbar m =
             ]
 
 
+readyOrWaitingIcon : Bool -> Html ReadyMsg
+readyOrWaitingIcon state =
+    if state then
+        i [ class ("material-icons ready-icon ready") ] [ text "check" ]
+    else
+        i [ class ("material-icons ready-icon waiting") ] [ text "timelapse" ]
+
+
 readyView : ReadyModel -> Html ReadyMsg
 readyView m =
-    div [ class "card" ]
-        [ div [ class "card-text" ] [ text "Set your name:" ]
-        , input [ placeholder "Anonymous", onInput NameInputChange ] []
-        , div [ class "card-text" ] [ text "Waiting for players..." ]
-        , button [ onClick (Ready True) ] [ text "Ready" ]
-        , div [] <|
-            List.map
-                (\a -> div [] [ text (a.name ++ " " ++ toString a.ready) ])
-                m.playerInfo
+    div []
+        [ div [ class "box" ]
+            [ div [ class "box-text" ] [ text "Set your name:" ]
+            , input [ placeholder "Anonymous", onInput NameInputChange ] []
+            , button [ class "box-button", onClick (Ready True) ] [ text "Ready" ]
+            ]
+        , div [ class "ready-status" ]
+            [ div [ class "box-text" ] [ text "Waiting for players..." ]
+            , div [ class "player-statuses" ] <|
+                List.map
+                    (\a ->
+                        div [ class "player-status" ]
+                            [ text a.name
+                            , readyOrWaitingIcon a.ready
+                            ]
+                    )
+                    m.playerInfo
+            ]
         ]
 
 
@@ -293,27 +322,38 @@ auctionView : AuctionModel -> Int -> Html AuctionMsg
 auctionView m gold =
     case m.auction of
         Just a ->
-            div [ class "card" ] <|
+            div [] <|
                 List.concat
-                    [ [ div [ class "card-text" ] [ text a.card.name ] ]
-                    , List.map (div [] << List.singleton) <|
-                        List.concat
-                            [ case a.highestBid of
-                                Just { bidder, bid } ->
-                                    [ text <| "Highest Bid: " ++ toString bid
-                                    , text <| "Highest Bidder: " ++ bidder
-                                    ]
-
-                                Nothing ->
-                                    []
-                            , [ button
-                                    [ onClick BidButton
-                                    , disabled (gold < Helper.nextBid a)
-                                    , class "card-button"
-                                    ]
-                                    [ text <| "Bid: " ++ toString (Helper.nextBid a) ]
-                              ]
+                    [ [ div [ class "box-text" ] [ text "Up for auction:" ]
+                      , div [ class "card" ]
+                            [ div [ class "card-heading" ]
+                                [ div [ class "card-title" ] [ text a.card.name ]
+                                , div [ class "card-cost" ] [ text "3T" ]
+                                ]
+                            , div [ class "card-text" ] [ text "When activated, the fruit will go sour." ]
                             ]
+                      , div [ class "auction-control" ]
+                            [ div [ class "auction-status" ]
+                                [ div [ class "box-text" ] [ text "Winner:" ]
+                                , div [ class "auction-winner" ]
+                                    [ text
+                                        (case a.highestBid of
+                                            Just { bidder, bid } ->
+                                                bidder
+
+                                            Nothing ->
+                                                "Nobody"
+                                        )
+                                    ]
+                                ]
+                            , button
+                                [ onClick BidButton
+                                , disabled (gold < Helper.nextBid a)
+                                , class "box-button"
+                                ]
+                                [ text <| "Bid: " ++ toString (Helper.nextBid a) ]
+                            ]
+                      ]
                     ]
 
         Nothing ->

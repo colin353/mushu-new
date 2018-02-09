@@ -22,6 +22,8 @@ const (
 	// AuctionBidTime specifies the amount of time after the last bid is
 	// placed that the auction will expire.
 	AuctionBidTime time.Duration = 5 * time.Second
+	// The number of cards held up for auction.
+	NumberOfBids = 3
 	// TradingStageTime is how long the production phase will last before
 	// the next phase begins.
 	TradingStageTime time.Duration = 10 * time.Second
@@ -79,7 +81,7 @@ func (s *WaitingController) RecieveMessage(u User, m Message) {
 	case LeaveMessage:
 		delete(s.ready, u)
 	case SetNameMessage:
-		// Just send a playerinfo update (done below), 
+		// Just send a playerinfo update (done below),
 		// no need to take action, since
 		// this is done by the game controller.
 	default:
@@ -158,7 +160,7 @@ func NewAuctionController(game *Game) *AuctionController {
 	return &AuctionController{
 		name:  AuctionState,
 		game:  game,
-		steps: 3,
+		steps: NumberOfBids,
 	}
 }
 
