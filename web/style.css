@@ -17,7 +17,7 @@ body {
 .view {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: 50px auto 150px;
+    grid-template-rows: 50px auto 200px;
     grid-gap: 10px;
     height: 100%;
 }
@@ -34,15 +34,15 @@ body {
 }
 
 .game-title {
-        flex-grow: 1;
-        color: rgba(255,255,255,0.9);
+    flex-grow: 1;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .link-icon {
-        width: 55px;
-        text-align: left;
-        margin-left: 10px;
-        margin-right: 10px;
+    width: 55px;
+    text-align: left;
+    margin-left: 10px;
+    margin-right: 10px;
 }
 
 .timer {
@@ -54,9 +54,9 @@ body {
 }
 
 .timer-text {
-        width: 25px;
-        text-align: right;
-        margin-right: 5px;
+    width: 25px;
+    text-align: right;
+    margin-right: 5px;
 }
 
 input {
@@ -82,26 +82,26 @@ input {
 }
 
 .player-statuses {
-     display: flex;
+    display: flex;
     flex-direction: column;
     width: 300px;
     margin-top: 10px;
     margin-left: auto;
-    margin-right: auto;      
+    margin-right: auto;
 }
 
 .ready-icon {
-        width: 50px;
-        text-align: center;
-        margin-left: 20px;
-        border-radius: 3px;
-        color: white;
-        width: 36px;
+    width: 50px;
+    text-align: center;
+    margin-left: 20px;
+    border-radius: 3px;
+    color: white;
+    width: 36px;
 }
 
 .card {
     width: 280px;
-    height: 300px;
+    height: 265px;
     border: 1px solid grey;
     border-radius: 5px;
     margin-top: 10px;
@@ -116,43 +116,69 @@ input {
 }
 
 .card-heading {
-        display: flex;
+    display: flex;
 }
 
 .card-title {
-        flex-grow: 1;
-        font-weight: bold;
+    flex-grow: 1;
+    font-weight: bold;
 }
 
 .card-text {
-        margin-top: 50px;
+    margin-top: 50px;
+}
+
+.card-micro {
+    font-size: 10pt;
+    width: 65px;
+    height: 90px;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 5px;
+    background-color: white;
+    box-shadow: 1px 1px 1px #555555;
+}
+
+.card-shelf {
+    height: 125px;
+    align-items: center;
+    display: flex;
+}
+
+.card-micro.card-placeholder {
+    background-color: transparent;
+    border: 0.15em dashed #444444;
+    box-shadow: none;
 }
 
 .auction-control {
-        display: flex;
+    display: flex;
 }
 
 .auction-status {
-        flex-grow: 1;
+    flex-grow: 1;
 }
 
 .auction-winner {
-        margin-left: 10px;
+    margin-left: 10px;
 }
 
 .ready-icon.ready {
-        jackground-color: rgb(52, 208, 88);
-        background-image: linear-gradient(-180deg, rgb(52, 208, 88) 0%, rgb(40, 167, 69) 90%);
+    jackground-color: rgb(52, 208, 88);
+    background-image: linear-gradient(-180deg, rgb(52, 208, 88) 0%, rgb(40, 167, 69) 90%);
 }
 
 .ready-icon.waiting {
-        background-color: #E8D264 /* #FFE66D; */
+    background-color: #E8D264/* #FFE66D; */
 }
 
 .player-status {
-        display: flex;
-        margin-bottom: 5px;
-        align-items: center;
+    display: flex;
+    margin-bottom: 5px;
+    align-items: center;
 }
 
 .box-text {
@@ -174,6 +200,76 @@ input {
     margin-left: auto;
     margin-right: 10px;
     color: white;
+}
+
+.box-button:disabled {
+    background-color: grey;
+    background-image: none;
+    color: #CCCCCC;
+}
+
+.inventory {
+    display: flex;
+    background-color: #CCCCCC;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.inventory-item {
+    flex-grow: 1;
+    text-align: center;
+    background-color: #CCCCCC;
+    color: rgb(36, 41, 46);
+}
+
+.Blueberry::after {
+    content: "";
+    background-color: #2274A5;
+    border-radius: 20px;
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+    margin-left: 7px;
+    position: relative;
+    top: 2px;
+}
+
+.Tomato::after {
+    content: "";
+    background-color: #DD7373;
+    border-radius: 20px;
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+    margin-left: 7px;
+    position: relative;
+    top: 2px;
+}
+
+.Corn::after {
+    content: "";
+    background-color: #FED766;
+    border-radius: 20px;
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+    margin-left: 7px;
+    position: relative;
+    top: 2px;
+}
+
+.Purple::after {
+    content: "";
+    background-color: #63474D;
+    border-radius: 20px;
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+    margin-left: 7px;
+    position: relative;
+    top: 2px;
 }
 
 .active-state {

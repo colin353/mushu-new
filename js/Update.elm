@@ -76,11 +76,6 @@ update msg model =
                     , Cmd.none
                     )
 
-        ToggleInventory ->
-            ( { model | inventoryVisible = not model.inventoryVisible }
-            , Cmd.none
-            )
-
         CardActivated index ->
             case
                 Helper.tryApplyCardEffect index model

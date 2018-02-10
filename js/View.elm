@@ -1,5 +1,6 @@
 module View exposing (view)
 
+import Card exposing (Card)
 import Material exposing (Material)
 import Model exposing (..)
 import Msg exposing (..)
@@ -34,14 +35,9 @@ view model =
               ]
             , [ div [ class "tray" ]
                     (List.concat
-                        [ if model.inventoryVisible then
-                            [ inventoryView model.inventory ]
-                          else
-                            []
+                        [ [ inventoryView model.inventory ]
                         , [ toolbar model
-                          , div []
-                                [ text ("$" ++ (toString model.gold))
-                                ]
+                          , div [] []
                           ]
                         ]
                     )
@@ -86,51 +82,35 @@ topBar model =
 
 
 inventoryView : Material Int -> Html Msg
-inventoryView =
-    div []
-        << List.singleton
-        << text
-        << List.foldr (++) ""
-        << List.intersperse " "
-        << Material.values
-        << Material.map
-            (\fr c -> toString c ++ Material.shorthand fr)
+inventoryView inv =
+    div [ class "inventory" ]
+        (Material.values
+            (Material.map
+                (\fruit count -> div [ class ("inventory-item " ++ (toString fruit)) ] [ text (toString count) ])
+                inv
+            )
+        )
+
+
+miniCardView : Card -> Html Msg
+miniCardView card =
+    div [ class "card-micro" ] [ text card.name ]
+
+
+cardPlaceholder : Html Msg
+cardPlaceholder =
+    div [ class "card-micro card-placeholder" ] []
 
 
 toolbar : Model -> Html Msg
 toolbar m =
-    div [] <|
-        List.concat
-            [ [ button [ onClick ToggleInventory ] [ text "Inventory" ] ]
-            , List.indexedMap
-                (\i card ->
-                    button
-                        [ onClick (CardActivated i)
-                        , disabled
-                            (Helper.isErr (Helper.tryApplyCardEffect i m))
-                        ]
-                    <|
-                        List.map (div [] << List.singleton)
-                            [ text card.name
-                            , text
-                                << (++) "Cost: "
-                                << List.foldr (++) ""
-                                << List.intersperse " "
-                              <|
-                                List.filterMap
-                                    (\( fr, c ) ->
-                                        if c /= 0 then
-                                            Just <|
-                                                toString c
-                                                    ++ Material.shorthand fr
-                                        else
-                                            Nothing
-                                    )
-                                    (Material.toList card.resourceCost)
-                            ]
-                )
-                m.cards
-            ]
+    div [ class "card-shelf" ] <|
+        List.take 4
+            (List.concat
+                [ List.map miniCardView m.cards
+                , List.repeat 4 cardPlaceholder
+                ]
+            )
 
 
 readyOrWaitingIcon : Bool -> Html ReadyMsg
@@ -328,7 +308,7 @@ auctionView m gold =
                       , div [ class "card" ]
                             [ div [ class "card-heading" ]
                                 [ div [ class "card-title" ] [ text a.card.name ]
-                                , div [ class "card-cost" ] [ text "3T" ]
+                                , div [ class "card-cost" ] [ div [ class "Tomato" ] [ text "3" ] ]
                                 ]
                             , div [ class "card-text" ] [ text "When activated, the fruit will go sour." ]
                             ]

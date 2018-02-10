@@ -20,7 +20,6 @@ type alias Model =
     , price : Maybe Price
     , input : String
     , messages : List String
-    , inventoryVisible : Bool
     }
 
 
@@ -82,7 +81,6 @@ initModel hostname =
     , price = Nothing
     , input = ""
     , messages = []
-    , inventoryVisible = False
     }
 
 
