@@ -100,7 +100,7 @@ input {
 }
 
 .card {
-    width: 280px;
+    width: auto;
     height: 265px;
     border: 1px solid grey;
     border-radius: 5px;
