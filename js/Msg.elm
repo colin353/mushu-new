@@ -25,7 +25,6 @@ type GameMsg
     | ProductionMsg ProductionMsg
     | AuctionMsg AuctionMsg
     | TradeMsg TradeMsg
-    | ToggleInventory
     | CardActivated Int
     | UpdateTimer Time
 
