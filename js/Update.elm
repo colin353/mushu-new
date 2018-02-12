@@ -98,9 +98,7 @@ updateApp toServer msg model =
                         |> handleAction action
 
                 Err e ->
-                    ( model
-                    , Cmd.none
-                    )
+                    model ! []
 
 
 updateWelcome :
@@ -114,16 +112,16 @@ updateWelcome toServer msg model =
                 gameName =
                     model.gameNameInput
             in
-                ( { model | submittedName = Just gameName }
-                , {- [question] sending Api.JoinGame even necessary?
-                     or does the server add us to the game automatically
-                     upon ws connection?
-                  -}
-                  toServer gameName (Api.JoinGame gameName)
-                )
+                { model | submittedName = Just gameName }
+                    ! [ {- [question] sending Api.JoinGame even necessary?
+                           or does the server add us to the game automatically
+                           upon ws connection?
+                        -}
+                        toServer gameName (Api.JoinGame gameName)
+                      ]
 
         GameNameInputChange str ->
-            ( { model | gameNameInput = str }, Cmd.none )
+            { model | gameNameInput = str } ! []
 
 
 updateGame : (String -> Server.SendToServer) -> GameMsg -> Upd GameModel
@@ -136,14 +134,12 @@ updateGame toServer msg model =
             ReadyMsg msg ->
                 case msg of
                     Ready _ ->
-                        ( model
-                        , toGameServer (Api.Ready True)
-                        )
+                        model
+                            ! [ toGameServer (Api.Ready True) ]
 
                     NameInputChange name ->
-                        ( { model | name = name }
-                        , toGameServer (Api.SetName name)
-                        )
+                        { model | name = name }
+                            ! [ toGameServer (Api.SetName name) ]
 
             ProductionMsg msg ->
                 tryUpdateL productionL (updateProduction msg) model
@@ -160,9 +156,7 @@ updateGame toServer msg model =
                     model
 
             ToggleInventory ->
-                ( { model | inventoryVisible = not model.inventoryVisible }
-                , Cmd.none
-                )
+                { model | inventoryVisible = not model.inventoryVisible } ! []
 
             CardActivated index ->
                 case
@@ -175,40 +169,38 @@ updateGame toServer msg model =
                         Debug.crash ("Card activation error: " ++ e)
 
             UpdateTimer tick ->
-                ( { model | stage = updateTimer (Timer.update tick) model.stage }
-                , Cmd.none
-                )
+                { model | stage = updateTimer (Timer.update tick) model.stage }
+                    ! []
 
 
 updateProduction : ProductionMsg -> Upd ProductionModel
 updateProduction msg m =
     case msg of
         FactorySelected fr ->
-            ( { m | selected = Just fr }
-            , Cmd.none
-            )
+            { m | selected = Just fr } ! []
 
 
 updateAuction : Server.SendToServer -> AuctionMsg -> Upd AuctionModel
 updateAuction toServer msg m =
     case msg of
         BidButton ->
-            ( m
-            , toServer
-                (Api.Bid
-                    (case m.auction of
-                        Just a ->
-                            Helper.nextBid a
+            m
+                ! [ toServer <|
+                        Api.Bid
+                            (case m.auction of
+                                Just a ->
+                                    Helper.nextBid a
 
-                        Nothing ->
-                            Debug.crash
-                                "Bid button should be disabled when no card"
-                    )
-                )
-            )
+                                Nothing ->
+                                    Debug.crash
+                                        ("Bid button should be "
+                                            ++ "disabled when no card"
+                                        )
+                            )
+                  ]
 
         ClockUpdated t ->
-            ( m, Cmd.none )
+            m ! []
 
 
 handleTradeMsg :
@@ -266,11 +258,7 @@ handleTradeMsg { toMsg } toServer msg model =
 
                         Just ( newInv, newBasket ) ->
                             tryUpdateL tradeL
-                                (\m ->
-                                    ( { m | basket = newBasket }
-                                    , Cmd.none
-                                    )
-                                )
+                                (\m -> { m | basket = newBasket } ! [])
                                 { model | inventory = newInv }
                 )
                 model
@@ -279,11 +267,7 @@ handleTradeMsg { toMsg } toServer msg model =
             updateIfL tradeL
                 (\m model ->
                     tryUpdateL tradeL
-                        (\m ->
-                            ( { m | basket = Material.empty }
-                            , Cmd.none
-                            )
-                        )
+                        (\m -> { m | basket = Material.empty } ! [])
                         { model
                             | inventory =
                                 Material.map2 (always (+))
@@ -296,7 +280,7 @@ handleTradeMsg { toMsg } toServer msg model =
         SellButton fruit ->
             case model.price of
                 Just price ->
-                    ( { model
+                    { model
                         | gold =
                             model.gold
                                 + floor (Material.lookup fruit price)
@@ -324,9 +308,8 @@ handleTradeMsg { toMsg } toServer msg model =
 
                                 Just inv ->
                                     inv
-                      }
-                    , toServer (Api.Sell fruit 1)
-                    )
+                    }
+                        ! [ toServer (Api.Sell fruit 1) ]
 
                 Nothing ->
                     Debug.crash
@@ -337,22 +320,21 @@ handleTradeMsg { toMsg } toServer msg model =
         Shake ->
             tryUpdateL tradeL
                 (\m ->
-                    ( m, toServer (Api.Trade m.basket) )
+                    m ! [ toServer (Api.Trade m.basket) ]
                 )
                 model
 
         YieldRoll yield ->
             updateIfL tradeL
                 (\_ model ->
-                    ( { model
+                    { model
                         | inventory =
                             Material.map2
                                 (always (+))
                                 model.inventory
                                 yield
-                      }
-                    , Cmd.none
-                    )
+                    }
+                        ! []
                 )
                 model
 
@@ -361,9 +343,7 @@ handleAction : Api.Action -> Upd AppModel
 handleAction action model =
     case action of
         Api.Welcome name ->
-            ( Game (initGameModel name)
-            , Cmd.none
-            )
+            Game (initGameModel name) ! []
 
         Api.GameStateChanged stage ->
             tryUpdateL gameL (changeStage stage) model
@@ -371,23 +351,22 @@ handleAction action model =
         Api.Auction seed ->
             tryUpdateL (gameL |> goIn auctionL)
                 (\m ->
-                    ( { m
+                    { m
                         | auction =
                             Just
                                 { card = Card.fromSeed seed
                                 , highestBid = Nothing
                                 , timer = Timer.init (5 * Time.second)
                                 }
-                      }
-                    , Cmd.none
-                    )
+                    }
+                        ! []
                 )
                 model
 
         Api.BidUpdated bid winner ->
             tryUpdateL (gameL |> goIn auctionL)
                 (\m ->
-                    ( { m
+                    { m
                         | auction =
                             Maybe.map
                                 (\a ->
@@ -400,25 +379,23 @@ handleAction action model =
                                     }
                                 )
                                 m.auction
-                      }
-                    , Cmd.none
-                    )
+                    }
+                        ! []
                 )
                 model
 
         Api.SetClock ms ->
             tryUpdateL gameL
                 (\m ->
-                    ( { m
+                    { m
                         | stage =
                             updateTimer
                                 (Timer.setTimeLeft
                                     (toFloat ms * Time.millisecond)
                                 )
                                 m.stage
-                      }
-                    , Cmd.none
-                    )
+                    }
+                        ! []
                 )
                 model
 
@@ -426,7 +403,7 @@ handleAction action model =
             {- display "You Won!" message -}
             (tryUpdateL gameL << updateIfL auctionL)
                 (\m model ->
-                    ( case m.auction of
+                    case m.auction of
                         Just a ->
                             { model
                                 | cards = a.card :: model.cards
@@ -441,57 +418,53 @@ handleAction action model =
                                                     "You won for free (???)"
                                           )
                             }
+                                ! []
 
                         Nothing ->
-                            model
-                    , Cmd.none
-                    )
+                            model ! []
                 )
                 model
 
         Api.PriceUpdated price ->
             tryUpdateL gameL
                 (\m ->
-                    ( { m | price = Just price }, Cmd.none )
+                    { m | price = Just price } ! []
                 )
                 model
 
         Api.EffectUpdated { yieldRateModifier } ->
             tryUpdateL gameL
                 (\m ->
-                    ( { m | yieldRateModifier = yieldRateModifier }
-                    , Cmd.none
-                    )
+                    { m | yieldRateModifier = yieldRateModifier } ! []
                 )
                 model
 
         Api.SaleCompleted count fruit price ->
             tryUpdateL gameL
                 (\m ->
-                    ( { m
+                    { m
                         | gold = m.gold + floor (price * toFloat count)
                         , inventory =
                             {- [note] hides negative item error -}
                             Material.update fruit
                                 (\c -> max 0 (c - count))
                                 m.inventory
-                      }
-                    , Cmd.none
-                    )
+                    }
+                        ! []
                 )
                 model
 
         Api.TradeCompleted mat ->
             tryUpdateL (gameL |> goIn tradeL)
-                (\m -> ( { m | basket = mat }, Cmd.none ))
+                (\m -> { m | basket = mat } ! [])
                 model
 
         Api.GameOver winner ->
-            ( model, Cmd.none )
+            model ! []
 
         Api.PlayerInfoUpdated info ->
             tryUpdateL (gameL |> goIn readyL)
-                (\m -> ( { m | playerInfo = info }, Cmd.none ))
+                (\m -> { m | playerInfo = info } ! [])
                 model
 
 
@@ -501,16 +474,16 @@ changeStage stage model =
         ( newStage, cmd ) =
             case stage of
                 ReadyStageType ->
-                    ( ReadyStage initReadyModel, Cmd.none )
+                    ReadyStage initReadyModel ! []
 
                 ProductionStageType ->
-                    ( ProductionStage initProductionModel, Cmd.none )
+                    ProductionStage initProductionModel ! []
 
                 AuctionStageType ->
-                    ( AuctionStage initAuctionModel, Cmd.none )
+                    AuctionStage initAuctionModel ! []
 
                 TradeStageType ->
-                    ( TradeStage initTradeModel, Cmd.none )
+                    TradeStage initTradeModel ! []
     in
         ( { model
             | stage = newStage
@@ -557,7 +530,7 @@ goIn inner outer =
                     outer.set (inner.set a b) c
 
                 Nothing ->
-                    Debug.log "No stage found" ( c, Cmd.none )
+                    Debug.log "No stage found" c ! []
     }
 
 
@@ -671,13 +644,13 @@ updateL { get, set } upd s =
 tryUpdateL : Lens a b c ( c, Cmd msg ) -> (a -> b) -> c -> ( c, Cmd msg )
 tryUpdateL lens upd s =
     updateL lens upd s
-        |> Maybe.withDefault (Debug.log "Cannot update" ( s, Cmd.none ))
+        |> Maybe.withDefault (Debug.log "Cannot update" s ! [])
 
 
 updateIfL : Lens a b s (Eff s) -> (a -> s -> Eff s) -> s -> Eff s
 updateIfL lens upd s =
     updateIfL_ lens upd s
-        |> Maybe.withDefault (Debug.log "Cannot update" ( s, Cmd.none ))
+        |> Maybe.withDefault (Debug.log "Cannot update" s ! [])
 
 
 updateIfL_ : Lens a b s t -> (a -> s -> t) -> s -> Maybe t
