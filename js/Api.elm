@@ -13,8 +13,8 @@ import Json.Encode as E
 
 
 type Action
-    = GameStateChanged StageType
-    | Welcome
+    = Welcome String
+    | GameStateChanged StageType
     | SetClock Int
     | Auction CardSeed
     | BidUpdated Int String
@@ -66,7 +66,8 @@ actionHelp a =
                 )
 
         "welcome" ->
-            D.succeed Welcome
+            D.map Welcome <|
+                (D.field "game" D.string)
 
         "set_clock" ->
             D.map SetClock

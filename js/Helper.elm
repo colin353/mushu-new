@@ -24,16 +24,19 @@ nextBid auction =
             auction.card.startingBid
 
 
-tryApplyCardEffect : Int -> Model -> Result String ( Model, Cmd Msg )
-tryApplyCardEffect index model =
+tryApplyCardEffectLocal :
+    Int
+    -> GameModel
+    -> Result String GameModel
+tryApplyCardEffectLocal index model =
     model.cards
         |> Array.fromList
         |> Array.get index
-        |> Result.fromMaybe "Cannot found card. Index mismatch."
+        |> Result.fromMaybe "Cannot find card. Index mismatch."
         |> Result.andThen
             (\card ->
                 let
-                    removeFromInv : Model -> Result String Model
+                    removeFromInv : GameModel -> Result String GameModel
                     removeFromInv m =
                         m.inventory
                             |> Material.trySubtract card.resourceCost
@@ -43,7 +46,7 @@ tryApplyCardEffect index model =
                                 )
                             |> Result.map (\inv -> { m | inventory = inv })
 
-                    removeCharge : Model -> Model
+                    removeCharge : GameModel -> GameModel
                     removeCharge m =
                         { m
                             | cards =
@@ -71,20 +74,42 @@ tryApplyCardEffect index model =
                                            )
                                         |> Array.toList
                         }
-
-                    toServer : Model -> Cmd Msg
-                    toServer =
-                        flip Server.send
-                            (Api.ApplyEffect
-                                { yieldRateModifier = card.yieldRateModifier
-                                , priceModifier = card.priceModifier
-                                }
-                            )
                 in
                     model
                         |> removeFromInv
                         |> Result.andThen (removeCharge >> Result.Ok)
-                        |> Result.map (\m -> ( m, toServer m ))
+            )
+
+
+tryApplyCardEffect :
+    Server.SendToServer
+    -> Int
+    -> GameModel
+    -> Result String ( GameModel, Cmd Msg )
+tryApplyCardEffect toServer index model =
+    model.cards
+        |> Array.fromList
+        |> Array.get index
+        |> Result.fromMaybe "Cannot find card. Index mismatch."
+        |> Result.andThen
+            (\card ->
+                tryApplyCardEffectLocal index model
+                    |> Result.andThen
+                        (\m ->
+                            let
+                                send : Cmd Msg
+                                send =
+                                    toServer
+                                        (Api.ApplyEffect
+                                            { yieldRateModifier =
+                                                card.yieldRateModifier
+                                            , priceModifier =
+                                                card.priceModifier
+                                            }
+                                        )
+                            in
+                                Result.Ok ( m, send )
+                        )
             )
 
 

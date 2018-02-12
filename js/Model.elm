@@ -5,21 +5,46 @@ import Card exposing (Card)
 import Material exposing (Fruit, Material)
 import Timer exposing (Timer)
 import Time exposing (Time)
-import Api
 
 
 type alias Model =
-    { stage : Stage
+    { hostname : String
+    , app : AppModel
+    }
+
+
+type AppModel
+    = WelcomeScreen WelcomeModel
+    | Game GameModel
+
+
+type alias WelcomeModel =
+    { gameNameInput : String
+
+    {- [tmp] [hack] right now this is needed
+       because we can only listen to ws
+       once we know the name, otherwise
+       the server will add us to a random
+       game
+
+       [note] we aren't using a bool, in case
+       input changes while waiting for server
+       response (though unlikely)
+    -}
+    , submittedName : Maybe String
+    }
+
+
+type alias GameModel =
+    { gameName : String
+    , stage : Stage
     , name : String
-    , hostname : String
     , gold : Int
     , inventory : Material Int
     , factories : Material Int
     , yieldRateModifier : Material Float
     , cards : List Card
     , price : Maybe Price
-    , input : String
-    , messages : List String
     , inventoryVisible : Bool
     }
 
@@ -68,8 +93,27 @@ type alias TradeModel =
 
 initModel : String -> Model
 initModel hostname =
-    { stage = ReadyStage initReadyModel
-    , hostname = hostname
+    { hostname = hostname
+    , app = initAppModel
+    }
+
+
+initAppModel : AppModel
+initAppModel =
+    WelcomeScreen initWelcomeModel
+
+
+initWelcomeModel : WelcomeModel
+initWelcomeModel =
+    { gameNameInput = ""
+    , submittedName = Nothing
+    }
+
+
+initGameModel : String -> GameModel
+initGameModel name =
+    { gameName = name
+    , stage = ReadyStage initReadyModel
     , name = "Anonymous"
     , gold = 25
     , inventory = Material.empty
@@ -80,8 +124,6 @@ initModel hostname =
     , yieldRateModifier = Material.create (always 1)
     , cards = []
     , price = Nothing
-    , input = ""
-    , messages = []
     , inventoryVisible = False
     }
 

@@ -14,6 +14,39 @@ import Time
 view : Model -> Html Msg
 view model =
     div [ class "view" ] <|
+        List.singleton <|
+            Html.map AppMsg <|
+                case model.app of
+                    WelcomeScreen model ->
+                        Html.map WelcomeMsg (welcomeView model)
+
+                    Game model ->
+                        Html.map GameMsg (gameView model)
+
+
+welcomeView : WelcomeModel -> Html WelcomeMsg
+welcomeView model =
+    div []
+        [ div [ class "box" ]
+            [ div [ class "box-text" ]
+                [ text "Type the name of the game to join:" ]
+            , input
+                [ placeholder "Game Name"
+                , onInput GameNameInputChange
+                ]
+                []
+            , button
+                [ class "box-button"
+                , onClick JoinGameButton
+                ]
+                [ text "Join Game" ]
+            ]
+        ]
+
+
+gameView : GameModel -> Html GameMsg
+gameView model =
+    div [] <|
         List.concat
             [ [ topBar model
               , div [ class "active-state" ]
@@ -49,16 +82,16 @@ view model =
             ]
 
 
-icon : String -> String -> Html Msg
+icon : String -> String -> Html GameMsg
 icon class_name icon_name =
     i [ class ("material-icons " ++ class_name) ] [ text icon_name ]
 
 
-topBar : Model -> Html Msg
+topBar : GameModel -> Html GameMsg
 topBar model =
     div [ class "heading" ]
         [ icon "link-icon" "link"
-        , div [ class "game-title" ] [ text "mushu: test" ]
+        , div [ class "game-title" ] [ text model.gameName ]
         , div [ class "timer" ]
             (List.concat
                 [ case
@@ -85,7 +118,7 @@ topBar model =
         ]
 
 
-inventoryView : Material Int -> Html Msg
+inventoryView : Material Int -> Html GameMsg
 inventoryView =
     div []
         << List.singleton
@@ -97,7 +130,7 @@ inventoryView =
             (\fr c -> toString c ++ Material.shorthand fr)
 
 
-toolbar : Model -> Html Msg
+toolbar : GameModel -> Html GameMsg
 toolbar m =
     div [] <|
         List.concat
@@ -107,7 +140,7 @@ toolbar m =
                     button
                         [ onClick (CardActivated i)
                         , disabled
-                            (Helper.isErr (Helper.tryApplyCardEffect i m))
+                            (Helper.isErr (Helper.tryApplyCardEffectLocal i m))
                         ]
                     <|
                         List.map (div [] << List.singleton)
@@ -164,7 +197,7 @@ readyView m =
         ]
 
 
-tradeView : Model -> TradeModel -> Html TradeMsg
+tradeView : GameModel -> TradeModel -> Html TradeMsg
 tradeView { inventory, price } m =
     let
         setDisplayStyle display =

@@ -6,16 +6,28 @@ import Api
 
 
 type Msg
+    = AppMsg AppMsg
+
+
+type AppMsg
+    = WelcomeMsg WelcomeMsg
+    | GameMsg GameMsg
+    | ServerMsgReceived (Result String Api.Action)
+
+
+type WelcomeMsg
+    = JoinGameButton
+    | GameNameInputChange String
+
+
+type GameMsg
     = ReadyMsg ReadyMsg
     | ProductionMsg ProductionMsg
     | AuctionMsg AuctionMsg
     | TradeMsg TradeMsg
-    | ServerMsgReceived (Result String Api.Action)
     | ToggleInventory
     | CardActivated Int
     | UpdateTimer Time
-    | Shake
-    | YieldRoll (Material Int)
 
 
 type ReadyMsg
@@ -29,6 +41,8 @@ type TradeMsg
     | MoveToBasket Fruit Int
     | SellButton Fruit
     | EmptyBasket
+    | Shake
+    | YieldRoll (Material Int)
 
 
 type ProductionMsg

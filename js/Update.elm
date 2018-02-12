@@ -18,105 +18,167 @@ import Debug
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Server.listen model ServerMsgReceived
-        , case timer model.stage of
-            Just _ ->
-                AnimationFrame.times UpdateTimer
+    Sub.batch <|
+        case model.app of
+            WelcomeScreen m ->
+                case m.submittedName of
+                    Just gameName ->
+                        [ Server.listen model
+                            gameName
+                            (AppMsg << ServerMsgReceived)
+                        ]
 
-            Nothing ->
-                Sub.none
-        , case model.stage of
-            TradeStage _ ->
-                Sub.batch
-                    [ Shake.shake (always Shake)
-                    , Time.every Time.second (TradeMsg << always Yield)
-                    ]
+                    Nothing ->
+                        []
 
-            _ ->
-                Sub.none
-        ]
+            Game m ->
+                [ Server.listen model
+                    m.gameName
+                    (AppMsg << ServerMsgReceived)
+                , case timer m.stage of
+                    Just _ ->
+                        AnimationFrame.times (AppMsg << GameMsg << UpdateTimer)
+
+                    Nothing ->
+                        Sub.none
+                , case m.stage of
+                    TradeStage _ ->
+                        Sub.batch
+                            [ Shake.shake
+                                (AppMsg
+                                    << GameMsg
+                                    << TradeMsg
+                                    << always Shake
+                                )
+                            , Time.every Time.second
+                                (AppMsg
+                                    << GameMsg
+                                    << TradeMsg
+                                    << always Yield
+                                )
+                            ]
+
+                    _ ->
+                        Sub.none
+                ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ReadyMsg msg ->
-            case msg of
-                Ready _ ->
-                    ( model
-                    , Server.send model (Api.Ready True)
-                    )
+        AppMsg msg ->
+            let
+                ( m, cmd ) =
+                    updateApp (Server.send model) msg model.app
+            in
+                ( { model | app = m }, cmd )
 
-                NameInputChange name ->
-                    ( { model | name = name }, Server.send model (Api.SetName name) )
 
-        ProductionMsg msg ->
-            tryUpdateProduction model (updateProduction msg)
+updateApp :
+    (String -> Server.SendToServer)
+    -> AppMsg
+    -> AppModel
+    -> ( AppModel, Cmd Msg )
+updateApp toServer msg model =
+    case msg of
+        WelcomeMsg msg ->
+            tryUpdateWelcome (updateWelcome toServer msg) model
 
-        AuctionMsg msg ->
-            tryUpdateAuction (updateAuction msg (Server.send model)) model
-
-        TradeMsg msg ->
-            handleTradeMsg msg model
+        GameMsg msg ->
+            tryUpdateGame (updateGame toServer msg) model
 
         ServerMsgReceived action ->
             case action of
                 Ok action ->
-                    { model
-                        | messages = toString action :: model.messages
-                    }
+                    model
                         |> handleAction action
 
                 Err e ->
-                    ( { model
-                        | messages =
-                            e :: model.messages
-                      }
+                    ( model
                     , Cmd.none
                     )
 
-        ToggleInventory ->
-            ( { model | inventoryVisible = not model.inventoryVisible }
-            , Cmd.none
-            )
 
-        CardActivated index ->
-            case
-                Helper.tryApplyCardEffect index model
-            of
-                Ok r ->
-                    r
-
-                Err e ->
-                    Debug.crash ("Card activation error: " ++ e)
-
-        Shake ->
-            tryUpdateTrade
-                (\m ->
-                    ( m, Server.send model (Api.Trade m.basket) )
+updateWelcome :
+    (String -> Server.SendToServer)
+    -> WelcomeMsg
+    -> WelcomeModel
+    -> ( WelcomeModel, Cmd Msg )
+updateWelcome toServer msg model =
+    case msg of
+        JoinGameButton ->
+            let
+                gameName =
+                    model.gameNameInput
+            in
+                ( { model | submittedName = Just gameName }
+                , {- [question] sending Api.JoinGame even necessary?
+                     or does the server add us to the game automatically
+                     upon ws connection?
+                  -}
+                  toServer gameName (Api.JoinGame gameName)
                 )
-                model
 
-        UpdateTimer tick ->
-            ( { model | stage = updateTimer (Timer.update tick) model.stage }
-            , Cmd.none
-            )
+        GameNameInputChange str ->
+            ( { model | gameNameInput = str }, Cmd.none )
 
-        YieldRoll yield ->
-            updateIfTrade
-                (\_ model ->
-                    ( { model
-                        | inventory =
-                            Material.map2
-                                (always (+))
-                                model.inventory
-                                yield
-                      }
-                    , Cmd.none
-                    )
+
+updateGame :
+    (String -> Server.SendToServer)
+    -> GameMsg
+    -> GameModel
+    -> ( GameModel, Cmd Msg )
+updateGame toServer msg model =
+    let
+        toGameServer =
+            toServer model.gameName
+    in
+        case msg of
+            ReadyMsg msg ->
+                case msg of
+                    Ready _ ->
+                        ( model
+                        , toGameServer (Api.Ready True)
+                        )
+
+                    NameInputChange name ->
+                        ( { model | name = name }
+                        , toGameServer (Api.SetName name)
+                        )
+
+            ProductionMsg msg ->
+                tryUpdateProduction model (updateProduction msg)
+
+            AuctionMsg msg ->
+                tryUpdateAuction (updateAuction msg toGameServer) model
+
+            TradeMsg msg ->
+                handleTradeMsg
+                    { toMsg = AppMsg << GameMsg << TradeMsg
+                    }
+                    toGameServer
+                    msg
+                    model
+
+            ToggleInventory ->
+                ( { model | inventoryVisible = not model.inventoryVisible }
+                , Cmd.none
                 )
-                model
+
+            CardActivated index ->
+                case
+                    Helper.tryApplyCardEffect toGameServer index model
+                of
+                    Ok r ->
+                        r
+
+                    Err e ->
+                        Debug.crash ("Card activation error: " ++ e)
+
+            UpdateTimer tick ->
+                ( { model | stage = updateTimer (Timer.update tick) model.stage }
+                , Cmd.none
+                )
 
 
 updateProduction :
@@ -157,146 +219,13 @@ updateAuction msg send m =
             ( m, Cmd.none )
 
 
-tryUpdateProduction :
-    Model
-    -> (ProductionModel -> ( ProductionModel, Cmd Msg ))
-    -> ( Model, Cmd Msg )
-tryUpdateProduction model upd =
-    case model.stage of
-        ProductionStage m ->
-            let
-                ( newM, cmd ) =
-                    upd m
-            in
-                ( { model | stage = ProductionStage newM }
-                , cmd
-                )
-
-        _ ->
-            (Debug.log
-                ("Tried running update function "
-                    ++ toString upd
-                    ++ " during "
-                    ++ toString model.stage
-                )
-                identity
-            )
-                ( model, Cmd.none )
-
-
-updateIfAuction :
-    (AuctionModel -> Model -> ( Model, Cmd Msg ))
-    -> Model
-    -> ( Model, Cmd Msg )
-updateIfAuction upd model =
-    case model.stage of
-        AuctionStage m ->
-            upd m model
-
-        _ ->
-            (Debug.log
-                ("Tried running update function "
-                    ++ toString upd
-                    ++ " during "
-                    ++ toString model.stage
-                )
-            )
-                ( model, Cmd.none )
-
-
-tryUpdateReady :
-    (ReadyModel -> ( ReadyModel, Cmd Msg ))
-    -> Model
-    -> ( Model, Cmd Msg )
-tryUpdateReady upd =
-    updateIfReady <|
-        \m model ->
-            let
-                ( newM, cmd ) =
-                    upd m
-            in
-                ( { model | stage = ReadyStage newM }
-                , cmd
-                )
-
-
-tryUpdateAuction :
-    (AuctionModel -> ( AuctionModel, Cmd Msg ))
-    -> Model
-    -> ( Model, Cmd Msg )
-tryUpdateAuction upd =
-    updateIfAuction <|
-        \m model ->
-            let
-                ( newM, cmd ) =
-                    upd m
-            in
-                ( { model | stage = AuctionStage newM }
-                , cmd
-                )
-
-
-updateIfReady :
-    (ReadyModel -> Model -> ( Model, Cmd Msg ))
-    -> Model
-    -> ( Model, Cmd Msg )
-updateIfReady upd model =
-    case model.stage of
-        ReadyStage m ->
-            upd m model
-
-        _ ->
-            (Debug.log
-                ("Tried running update function "
-                    ++ toString upd
-                    ++ " during "
-                    ++ toString model.stage
-                )
-                identity
-            )
-                ( model, Cmd.none )
-
-
-updateIfTrade :
-    (TradeModel -> Model -> ( Model, Cmd Msg ))
-    -> Model
-    -> ( Model, Cmd Msg )
-updateIfTrade upd model =
-    case model.stage of
-        TradeStage m ->
-            upd m model
-
-        _ ->
-            (Debug.log
-                ("Tried running update function "
-                    ++ toString upd
-                    ++ " during "
-                    ++ toString model.stage
-                )
-                identity
-            )
-                ( model, Cmd.none )
-
-
-tryUpdateTrade :
-    (TradeModel -> ( TradeModel, Cmd Msg ))
-    -> Model
-    -> ( Model, Cmd Msg )
-tryUpdateTrade upd =
-    updateIfTrade
-        (\m model ->
-            let
-                ( newM, cmd ) =
-                    upd m
-            in
-                ( { model | stage = TradeStage newM }
-                , cmd
-                )
-        )
-
-
-handleTradeMsg : TradeMsg -> Model -> ( Model, Cmd Msg )
-handleTradeMsg msg model =
+handleTradeMsg :
+    { toMsg : TradeMsg -> Msg }
+    -> Server.SendToServer
+    -> TradeMsg
+    -> GameModel
+    -> ( GameModel, Cmd Msg )
+handleTradeMsg { toMsg } toServer msg model =
     case msg of
         Yield ->
             let
@@ -334,7 +263,7 @@ handleTradeMsg msg model =
                             matRandom.corn
                             matRandom.purple
             in
-                ( model, Random.generate YieldRoll yield )
+                ( model, Random.generate (toMsg << YieldRoll) yield )
 
         MoveToBasket fruit count ->
             updateIfTrade
@@ -404,7 +333,7 @@ handleTradeMsg msg model =
                                 Just inv ->
                                     inv
                       }
-                    , Server.send model (Api.Sell fruit 1)
+                    , toServer (Api.Sell fruit 1)
                     )
 
                 Nothing ->
@@ -413,25 +342,42 @@ handleTradeMsg msg model =
                             ++ "Sell button should have been disabled."
                         )
 
+        Shake ->
+            tryUpdateTrade
+                (\m ->
+                    ( m, toServer (Api.Trade m.basket) )
+                )
+                model
 
-baseYieldRate : Material Float
-baseYieldRate =
-    Material.create (always 1)
+        YieldRoll yield ->
+            updateIfTrade
+                (\_ model ->
+                    ( { model
+                        | inventory =
+                            Material.map2
+                                (always (+))
+                                model.inventory
+                                yield
+                      }
+                    , Cmd.none
+                    )
+                )
+                model
 
 
-totalYieldRate : Material Float -> Material Int -> Material Int
-totalYieldRate =
-    Material.map3 (always (\a b c -> floor (a * b) * c)) baseYieldRate
-
-
-handleAction : Api.Action -> Model -> ( Model, Cmd Msg )
+handleAction : Api.Action -> AppModel -> ( AppModel, Cmd Msg )
 handleAction action model =
     case action of
+        Api.Welcome name ->
+            ( Game (initGameModel name)
+            , Cmd.none
+            )
+
         Api.GameStateChanged stage ->
-            changeStage stage model
+            tryUpdateGame (changeStage stage) model
 
         Api.Auction seed ->
-            tryUpdateAuction
+            (tryUpdateGame << tryUpdateAuction)
                 (\m ->
                     ( { m
                         | auction =
@@ -447,7 +393,7 @@ handleAction action model =
                 model
 
         Api.BidUpdated bid winner ->
-            tryUpdateAuction
+            (tryUpdateGame << tryUpdateAuction)
                 (\m ->
                     ( { m
                         | auction =
@@ -468,22 +414,23 @@ handleAction action model =
                 )
                 model
 
-        Api.Welcome ->
-            ( model, Cmd.none )
-
         Api.SetClock ms ->
-            ( { model
-                | stage =
-                    updateTimer
-                        (Timer.setTimeLeft (toFloat ms * Time.millisecond))
-                        model.stage
-              }
-            , Cmd.none
-            )
+            tryUpdateGame
+                (\m ->
+                    ( { m
+                        | stage =
+                            updateTimer
+                                (Timer.setTimeLeft (toFloat ms * Time.millisecond))
+                                m.stage
+                      }
+                    , Cmd.none
+                    )
+                )
+                model
 
         Api.AuctionWon ->
             {- display "You Won!" message -}
-            updateIfAuction
+            (tryUpdateGame << updateIfAuction)
                 (\m model ->
                     ( case m.auction of
                         Just a ->
@@ -509,27 +456,39 @@ handleAction action model =
                 model
 
         Api.PriceUpdated price ->
-            ( { model | price = Just price }, Cmd.none )
+            tryUpdateGame
+                (\m ->
+                    ( { m | price = Just price }, Cmd.none )
+                )
+                model
 
         Api.EffectUpdated { yieldRateModifier } ->
-            ( { model | yieldRateModifier = yieldRateModifier }
-            , Cmd.none
-            )
+            tryUpdateGame
+                (\m ->
+                    ( { m | yieldRateModifier = yieldRateModifier }
+                    , Cmd.none
+                    )
+                )
+                model
 
         Api.SaleCompleted count fruit price ->
-            ( { model
-                | gold = model.gold + floor (price * toFloat count)
-                , inventory =
-                    {- [note] hides negative item error -}
-                    Material.update fruit
-                        (\c -> max 0 (c - count))
-                        model.inventory
-              }
-            , Cmd.none
-            )
+            tryUpdateGame
+                (\m ->
+                    ( { m
+                        | gold = m.gold + floor (price * toFloat count)
+                        , inventory =
+                            {- [note] hides negative item error -}
+                            Material.update fruit
+                                (\c -> max 0 (c - count))
+                                m.inventory
+                      }
+                    , Cmd.none
+                    )
+                )
+                model
 
         Api.TradeCompleted mat ->
-            tryUpdateTrade
+            (tryUpdateGame << tryUpdateTrade)
                 (\m -> ( { m | basket = mat }, Cmd.none ))
                 model
 
@@ -537,12 +496,12 @@ handleAction action model =
             ( model, Cmd.none )
 
         Api.PlayerInfoUpdated info ->
-            tryUpdateReady
+            (tryUpdateGame << tryUpdateReady)
                 (\m -> ( { m | playerInfo = info }, Cmd.none ))
                 model
 
 
-changeStage : StageType -> Model -> ( Model, Cmd Msg )
+changeStage : StageType -> GameModel -> ( GameModel, Cmd Msg )
 changeStage stage model =
     let
         ( newStage, cmd ) =
@@ -578,3 +537,219 @@ changeStage stage model =
           }
         , cmd
         )
+
+
+
+-- HELPER UPDATERS
+
+
+updateIfWelcome :
+    (WelcomeModel -> ( AppModel, Cmd Msg ))
+    -> AppModel
+    -> ( AppModel, Cmd Msg )
+updateIfWelcome upd model =
+    case model of
+        WelcomeScreen m ->
+            upd m
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model
+                )
+            )
+                ( model, Cmd.none )
+
+
+tryUpdateWelcome :
+    (WelcomeModel -> ( WelcomeModel, Cmd Msg ))
+    -> AppModel
+    -> ( AppModel, Cmd Msg )
+tryUpdateWelcome upd =
+    updateIfWelcome <|
+        \m ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( WelcomeScreen newM, cmd )
+
+
+updateIfGame :
+    (GameModel -> ( AppModel, Cmd Msg ))
+    -> AppModel
+    -> ( AppModel, Cmd Msg )
+updateIfGame upd model =
+    case model of
+        Game m ->
+            upd m
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model
+                )
+            )
+                ( model, Cmd.none )
+
+
+tryUpdateGame :
+    (GameModel -> ( GameModel, Cmd Msg ))
+    -> AppModel
+    -> ( AppModel, Cmd Msg )
+tryUpdateGame upd =
+    updateIfGame <|
+        \m ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( Game newM, cmd )
+
+
+updateIfReady :
+    (ReadyModel -> GameModel -> ( GameModel, Cmd Msg ))
+    -> GameModel
+    -> ( GameModel, Cmd Msg )
+updateIfReady upd model =
+    case model.stage of
+        ReadyStage m ->
+            upd m model
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model.stage
+                )
+                identity
+            )
+                ( model, Cmd.none )
+
+
+tryUpdateReady :
+    (ReadyModel -> ( ReadyModel, Cmd Msg ))
+    -> GameModel
+    -> ( GameModel, Cmd Msg )
+tryUpdateReady upd =
+    updateIfReady <|
+        \m model ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = ReadyStage newM }, cmd )
+
+
+tryUpdateProduction :
+    GameModel
+    -> (ProductionModel -> ( ProductionModel, Cmd Msg ))
+    -> ( GameModel, Cmd Msg )
+tryUpdateProduction model upd =
+    case model.stage of
+        ProductionStage m ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = ProductionStage newM }, cmd )
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model.stage
+                )
+                identity
+            )
+                ( model, Cmd.none )
+
+
+updateIfAuction :
+    (AuctionModel -> GameModel -> ( GameModel, Cmd Msg ))
+    -> GameModel
+    -> ( GameModel, Cmd Msg )
+updateIfAuction upd model =
+    case model.stage of
+        AuctionStage m ->
+            upd m model
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model.stage
+                )
+            )
+                ( model, Cmd.none )
+
+
+tryUpdateAuction :
+    (AuctionModel -> ( AuctionModel, Cmd Msg ))
+    -> GameModel
+    -> ( GameModel, Cmd Msg )
+tryUpdateAuction upd =
+    updateIfAuction <|
+        \m model ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = AuctionStage newM }, cmd )
+
+
+updateIfTrade :
+    (TradeModel -> GameModel -> ( GameModel, Cmd Msg ))
+    -> GameModel
+    -> ( GameModel, Cmd Msg )
+updateIfTrade upd model =
+    case model.stage of
+        TradeStage m ->
+            upd m model
+
+        _ ->
+            (Debug.log
+                ("Tried running update function "
+                    ++ toString upd
+                    ++ " during "
+                    ++ toString model.stage
+                )
+                identity
+            )
+                ( model, Cmd.none )
+
+
+tryUpdateTrade :
+    (TradeModel -> ( TradeModel, Cmd Msg ))
+    -> GameModel
+    -> ( GameModel, Cmd Msg )
+tryUpdateTrade upd =
+    updateIfTrade
+        (\m model ->
+            let
+                ( newM, cmd ) =
+                    upd m
+            in
+                ( { model | stage = TradeStage newM }, cmd )
+        )
+
+
+
+-- HELPERS
+
+
+baseYieldRate : Material Float
+baseYieldRate =
+    Material.create (always 1)
+
+
+totalYieldRate : Material Float -> Material Int -> Material Int
+totalYieldRate =
+    Material.map3 (always (\a b c -> floor (a * b) * c)) baseYieldRate
