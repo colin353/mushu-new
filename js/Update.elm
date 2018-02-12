@@ -71,25 +71,56 @@ type alias Upd model =
     model -> Eff model
 
 
+type alias Ctx msg =
+    { toServer : String -> Server.SendToServer
+    , toMsg : msg -> Msg
+    }
+
+
+type alias GameCtx msg =
+    { toGameServer : Server.SendToServer
+    , toMsg : msg -> Msg
+    }
+
+
 update : Msg -> Upd Model
 update msg model =
     case msg of
         AppMsg msg ->
             let
                 ( m, cmd ) =
-                    updateApp (Server.send model) msg model.app
+                    updateApp
+                        { toServer = Server.send model
+                        , toMsg = AppMsg
+                        }
+                        msg
+                        model.app
             in
                 ( { model | app = m }, cmd )
 
 
-updateApp : (String -> Server.SendToServer) -> AppMsg -> Upd AppModel
-updateApp toServer msg model =
+updateApp : Ctx AppMsg -> AppMsg -> Upd AppModel
+updateApp { toServer, toMsg } msg model =
     case msg of
         WelcomeMsg msg ->
-            tryUpdateL welcomeL (updateWelcome toServer msg) model
+            tryUpdateL welcomeL
+                (updateWelcome
+                    { toServer = toServer
+                    , toMsg = toMsg << WelcomeMsg
+                    }
+                    msg
+                )
+                model
 
         GameMsg msg ->
-            tryUpdateL gameL (updateGame toServer msg) model
+            tryUpdateL gameL
+                (updateGame
+                    { toServer = toServer
+                    , toMsg = toMsg << GameMsg
+                    }
+                    msg
+                )
+                model
 
         ServerMsgReceived action ->
             case action of
@@ -101,11 +132,8 @@ updateApp toServer msg model =
                     model ! []
 
 
-updateWelcome :
-    (String -> Server.SendToServer)
-    -> WelcomeMsg
-    -> Upd WelcomeModel
-updateWelcome toServer msg model =
+updateWelcome : Ctx WelcomeMsg -> WelcomeMsg -> Upd WelcomeModel
+updateWelcome { toServer } msg model =
     case msg of
         JoinGameButton ->
             let
@@ -124,8 +152,8 @@ updateWelcome toServer msg model =
             { model | gameNameInput = str } ! []
 
 
-updateGame : (String -> Server.SendToServer) -> GameMsg -> Upd GameModel
-updateGame toServer msg model =
+updateGame : Ctx GameMsg -> GameMsg -> Upd GameModel
+updateGame { toServer, toMsg } msg model =
     let
         toGameServer =
             toServer model.gameName
@@ -145,13 +173,20 @@ updateGame toServer msg model =
                 tryUpdateL productionL (updateProduction msg) model
 
             AuctionMsg msg ->
-                tryUpdateL auctionL (updateAuction toGameServer msg) model
+                tryUpdateL auctionL
+                    (updateAuction
+                        { toGameServer = toGameServer
+                        , toMsg = toMsg << AuctionMsg
+                        }
+                        msg
+                    )
+                    model
 
             TradeMsg msg ->
                 handleTradeMsg
-                    { toMsg = AppMsg << GameMsg << TradeMsg
+                    { toGameServer = toGameServer
+                    , toMsg = AppMsg << GameMsg << TradeMsg
                     }
-                    toGameServer
                     msg
                     model
 
@@ -174,20 +209,20 @@ updateGame toServer msg model =
 
 
 updateProduction : ProductionMsg -> Upd ProductionModel
-updateProduction msg m =
+updateProduction msg model =
     case msg of
         FactorySelected fr ->
-            { m | selected = Just fr } ! []
+            { model | selected = Just fr } ! []
 
 
-updateAuction : Server.SendToServer -> AuctionMsg -> Upd AuctionModel
-updateAuction toServer msg m =
+updateAuction : GameCtx AuctionMsg -> AuctionMsg -> Upd AuctionModel
+updateAuction { toGameServer } msg model =
     case msg of
         BidButton ->
-            m
-                ! [ toServer <|
+            model
+                ! [ toGameServer <|
                         Api.Bid
-                            (case m.auction of
+                            (case model.auction of
                                 Just a ->
                                     Helper.nextBid a
 
@@ -200,15 +235,11 @@ updateAuction toServer msg m =
                   ]
 
         ClockUpdated t ->
-            m ! []
+            model ! []
 
 
-handleTradeMsg :
-    { toMsg : TradeMsg -> Msg }
-    -> Server.SendToServer
-    -> TradeMsg
-    -> Upd GameModel
-handleTradeMsg { toMsg } toServer msg model =
+handleTradeMsg : GameCtx TradeMsg -> TradeMsg -> Upd GameModel
+handleTradeMsg { toGameServer, toMsg } msg model =
     case msg of
         Yield ->
             let
@@ -309,7 +340,7 @@ handleTradeMsg { toMsg } toServer msg model =
                                 Just inv ->
                                     inv
                     }
-                        ! [ toServer (Api.Sell fruit 1) ]
+                        ! [ toGameServer (Api.Sell fruit 1) ]
 
                 Nothing ->
                     Debug.crash
@@ -320,7 +351,7 @@ handleTradeMsg { toMsg } toServer msg model =
         Shake ->
             tryUpdateL tradeL
                 (\m ->
-                    m ! [ toServer (Api.Trade m.basket) ]
+                    m ! [ toGameServer (Api.Trade m.basket) ]
                 )
                 model
 
