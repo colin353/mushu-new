@@ -48,6 +48,7 @@ type alias GameModel =
     , price : Maybe Price
     , input : String
     , messages : List String
+    , zoomCard : Maybe Card
     }
 
 
@@ -120,6 +121,7 @@ initGameModel name =
     , gold = 25
     , inventory = Material.empty
     , factories = Material.empty
+    , zoomCard = Nothing
 
     -- [note] should perhaps use Maybe since
     -- we are using this to represent server pushed vallue

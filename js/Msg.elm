@@ -1,5 +1,6 @@
 module Msg exposing (..)
 
+import Card exposing (Card)
 import Material exposing (Fruit, Material)
 import Time exposing (Time)
 import Api
@@ -27,6 +28,7 @@ type GameMsg
     | TradeMsg TradeMsg
     | CardActivated Int
     | UpdateTimer Time
+    | ZoomCard Card
 
 
 type ReadyMsg

@@ -15,7 +15,7 @@ import Time
 
 view : Model -> Html Msg
 view model =
-    div [ class "view" ] <|
+    div [ class "overview" ] <|
         List.singleton <|
             Html.map AppMsg <|
                 case model.app of
@@ -28,8 +28,9 @@ view model =
 
 welcomeView : WelcomeModel -> Html WelcomeMsg
 welcomeView model =
-    div []
-        [ div [ class "box" ]
+    div [ class "welcome" ]
+        [ div [] []
+        , div [ class "box" ]
             [ div [ class "box-text" ]
                 [ text "Type the name of the game to join:" ]
             , input
@@ -48,7 +49,7 @@ welcomeView model =
 
 gameView : GameModel -> Html GameMsg
 gameView model =
-    div [] <|
+    div [ class "view" ] <|
         List.concat
             [ [ topBar model
               , div [ class "active-state" ]
@@ -76,7 +77,21 @@ gameView model =
                         ]
                     )
               ]
+            , case model.zoomCard of
+                Just c ->
+                    [ cardDetailView c ]
+
+                Nothing ->
+                    []
             ]
+
+
+cardDetailView : Card -> Html GameMsg
+cardDetailView card =
+    div []
+        [ div [ class "popover" ] [ cardView card ]
+        , div [ class "overlay" ] []
+        ]
 
 
 icon : String -> String -> Html GameMsg
@@ -128,7 +143,7 @@ inventoryView inv =
 
 miniCardView : Card -> Html GameMsg
 miniCardView card =
-    div [ class "card-micro" ] [ text card.name ]
+    div [ onClick (ZoomCard card), class "card-micro" ] [ text card.name ]
 
 
 cardPlaceholder : Html GameMsg
@@ -332,20 +347,26 @@ productionView factories m =
             Material.allFruits
 
 
+cardView : Card -> Html a
+cardView card =
+    div [ class "card" ]
+        [ div [ class "card-heading" ]
+            [ div [ class "card-title" ] [ text card.name ]
+            , div [ class "card-cost" ] [ div [ class "Tomato" ] [ text "3" ] ]
+            ]
+        , div [ class "card-text" ] [ text "When activated, the fruit will go sour." ]
+        ]
+
+
 auctionView : AuctionModel -> Int -> Html AuctionMsg
 auctionView m gold =
     case m.auction of
         Just a ->
             div [] <|
                 List.concat
-                    [ [ div [ class "box-text" ] [ text "Up for auction:" ]
-                      , div [ class "card" ]
-                            [ div [ class "card-heading" ]
-                                [ div [ class "card-title" ] [ text a.card.name ]
-                                , div [ class "card-cost" ] [ div [ class "Tomato" ] [ text "3" ] ]
-                                ]
-                            , div [ class "card-text" ] [ text "When activated, the fruit will go sour." ]
-                            ]
+                    [ [ div [ class "box-text" ]
+                            [ text "Up for auction:" ]
+                      , (cardView a.card)
                       , div [ class "auction-control" ]
                             [ div [ class "auction-status" ]
                                 [ div [ class "box-text" ] [ text "Winner:" ]

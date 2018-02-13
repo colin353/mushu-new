@@ -14,6 +14,45 @@ body {
     user-select: none;
 }
 
+.overview {
+    height: 100%;
+    width: 100%;
+}
+
+.welcome {
+    margin-top: 20%;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    background-color: black;
+    opacity: 0.3;
+}
+
+.popover {
+    z-index: 10;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    padding: 20px;
+    border-radius: 20px;
+    display: flex;
+    border: 1px solid black;
+    background-color: white;
+    width: 80%;
+    height: 400px;
+    transform: translate(-50%, -50%);
+}
+
+
 .view {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

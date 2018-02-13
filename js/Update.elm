@@ -181,8 +181,9 @@ updateGame { toServer, toMsg } msg model =
                     msg
                     model
 
-            ToggleInventory ->
-                { model | inventoryVisible = not model.inventoryVisible } ! []
+            ZoomCard card ->
+                { model | zoomCard = Just card }
+                    ! []
 
             CardActivated index ->
                 case
