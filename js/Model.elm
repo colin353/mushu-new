@@ -3,6 +3,7 @@ module Model exposing (..)
 import BaseType exposing (..)
 import Card exposing (Card)
 import Material exposing (Fruit, Material)
+import Lens exposing (PureLens)
 import Timer exposing (Timer)
 import Time exposing (Time)
 
@@ -160,39 +161,42 @@ initAuctionModel =
 -- GETTER & SETTERS
 
 
-timer : Stage -> Maybe Timer
-timer stage =
-    case stage of
-        ReadyStage _ ->
-            Nothing
+timer : PureLens Timer Stage
+timer =
+    let
+        get stage =
+            case stage of
+                ReadyStage _ ->
+                    Nothing
 
-        ProductionStage m ->
-            Just m.timer
+                ProductionStage m ->
+                    Just m.timer
 
-        AuctionStage m ->
-            m.auction |> Maybe.map .timer
+                AuctionStage m ->
+                    m.auction |> Maybe.map .timer
 
-        TradeStage m ->
-            Just m.timer
+                TradeStage m ->
+                    Just m.timer
 
+        set timer stage =
+            case stage of
+                ReadyStage _ ->
+                    Nothing
 
-updateTimer : (Timer -> Timer) -> Stage -> Stage
-updateTimer upd stage =
-    case stage of
-        ReadyStage m ->
-            stage
+                ProductionStage m ->
+                    Just <| ProductionStage { m | timer = timer }
 
-        ProductionStage m ->
-            ProductionStage { m | timer = upd m.timer }
+                TradeStage m ->
+                    Just <| TradeStage { m | timer = timer }
 
-        TradeStage m ->
-            TradeStage { m | timer = upd m.timer }
-
-        AuctionStage m ->
-            AuctionStage
-                { m
-                    | auction =
-                        Maybe.map
-                            (\a -> { a | timer = upd a.timer })
-                            m.auction
-                }
+                AuctionStage m ->
+                    Just <|
+                        AuctionStage
+                            { m
+                                | auction =
+                                    Maybe.map
+                                        (\a -> { a | timer = timer })
+                                        m.auction
+                            }
+    in
+        { get = get, set = set }

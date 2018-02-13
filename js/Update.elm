@@ -9,6 +9,7 @@ import Api
 import Server
 import Shake
 import Timer
+import Lens exposing (Lens, goIn)
 import Helper
 import AnimationFrame
 import Time exposing (Time)
@@ -35,7 +36,7 @@ subscriptions model =
                 [ Server.listen model
                     m.gameName
                     (AppMsg << ServerMsgReceived)
-                , case timer m.stage of
+                , case Lens.get timer m.stage of
                     Just _ ->
                         AnimationFrame.times (AppMsg << GameMsg << UpdateTimer)
 
@@ -194,7 +195,13 @@ updateGame { toServer, toMsg } msg model =
                         Debug.crash ("Card activation error: " ++ e)
 
             UpdateTimer tick ->
-                { model | stage = updateTimer (Timer.update tick) model.stage }
+                { model
+                    | stage =
+                        Lens.update timer
+                            (Timer.update tick)
+                            model.stage
+                            |> Maybe.withDefault model.stage
+                }
                     ! []
 
 
@@ -410,11 +417,12 @@ handleAction action model =
                 (\m ->
                     { m
                         | stage =
-                            updateTimer
+                            Lens.update timer
                                 (Timer.setTimeLeft
                                     (toFloat ms * Time.millisecond)
                                 )
                                 m.stage
+                                |> Maybe.withDefault m.stage
                     }
                         ! []
                 )
@@ -531,31 +539,8 @@ changeStage stage model =
 -- HELPER UPDATERS
 
 
-type alias Lens submodel updatedSubmodel model updatedModel =
-    { get : model -> Maybe submodel
-    , set : updatedSubmodel -> model -> Maybe updatedModel
-    }
-
-
 type alias EffLens submodel model =
     Lens submodel (Eff submodel) model (Eff model)
-
-
-goIn :
-    EffLens submodel model
-    -> EffLens model supermodel
-    -> EffLens submodel supermodel
-goIn submodelInModel modelInSuperModel =
-    { get = modelInSuperModel.get >> Maybe.andThen submodelInModel.get
-    , set =
-        \submodel supermodel ->
-            modelInSuperModel.get supermodel
-                |> Maybe.andThen
-                    (submodelInModel.set submodel
-                        >> Maybe.andThen
-                            (flip modelInSuperModel.set supermodel)
-                    )
-    }
 
 
 welcome : EffLens WelcomeModel AppModel
@@ -660,22 +645,13 @@ trade =
         { get = get, set = set }
 
 
-updateL :
-    Lens submodel updatedSubmodel model updatedModel
-    -> (submodel -> updatedSubmodel)
-    -> model
-    -> Maybe updatedModel
-updateL { get, set } upd model =
-    get model |> Maybe.andThen (upd >> flip set model)
-
-
 tryUpdate :
     Lens submodel updatedSubmodel model (Eff model)
     -> (submodel -> updatedSubmodel)
     -> model
     -> Eff model
 tryUpdate lens upd model =
-    updateL lens upd model
+    Lens.update lens upd model
         |> Maybe.withDefault (Debug.log "Cannot update" model ! [])
 
 
@@ -685,17 +661,8 @@ updateIf :
     -> model
     -> Eff model
 updateIf lens upd model =
-    updateIf_ lens upd model
+    Lens.updateIf lens upd model
         |> Maybe.withDefault (Debug.log "Cannot update" model ! [])
-
-
-updateIf_ :
-    Lens submodel updatedSubmodel model updatedModel
-    -> (submodel -> model -> updatedModel)
-    -> model
-    -> Maybe updatedModel
-updateIf_ { get } upd model =
-    get model |> Maybe.map (flip upd model)
 
 
 

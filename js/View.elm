@@ -4,6 +4,7 @@ import Material exposing (Material)
 import Model exposing (..)
 import Msg exposing (..)
 import Timer
+import Lens
 import Helper
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -95,7 +96,7 @@ topBar model =
         , div [ class "timer" ]
             (List.concat
                 [ case
-                    timer model.stage
+                    Lens.get timer model.stage
                   of
                     Just timer ->
                         [ div [ class "timer-text" ]
