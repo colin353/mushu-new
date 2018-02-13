@@ -100,26 +100,16 @@ update msg model =
 
 
 updateApp : Ctx AppMsg -> AppMsg -> Upd AppModel
-updateApp { toServer, toMsg } msg model =
+updateApp ctx msg model =
     case msg of
         WelcomeMsg msg ->
-            tryUpdateL welcomeL
-                (updateWelcome
-                    { toServer = toServer
-                    , toMsg = toMsg << WelcomeMsg
-                    }
-                    msg
-                )
+            tryUpdate welcome
+                (updateWelcome { ctx | toMsg = ctx.toMsg << WelcomeMsg } msg)
                 model
 
         GameMsg msg ->
-            tryUpdateL gameL
-                (updateGame
-                    { toServer = toServer
-                    , toMsg = toMsg << GameMsg
-                    }
-                    msg
-                )
+            tryUpdate game
+                (updateGame { ctx | toMsg = ctx.toMsg << GameMsg } msg)
                 model
 
         ServerMsgReceived action ->
@@ -170,10 +160,10 @@ updateGame { toServer, toMsg } msg model =
                             ! [ toGameServer (Api.SetName name) ]
 
             ProductionMsg msg ->
-                tryUpdateL productionL (updateProduction msg) model
+                tryUpdate production (updateProduction msg) model
 
             AuctionMsg msg ->
-                tryUpdateL auctionL
+                tryUpdate auction
                     (updateAuction
                         { toGameServer = toGameServer
                         , toMsg = toMsg << AuctionMsg
@@ -280,7 +270,7 @@ handleTradeMsg { toGameServer, toMsg } msg model =
                 ( model, Random.generate (toMsg << YieldRoll) yield )
 
         MoveToBasket fruit count ->
-            updateIfL tradeL
+            updateIf trade
                 (\m model ->
                     case Helper.move fruit count model.inventory m.basket of
                         Nothing ->
@@ -288,16 +278,16 @@ handleTradeMsg { toGameServer, toMsg } msg model =
                                 "+/- buttons should be disabled"
 
                         Just ( newInv, newBasket ) ->
-                            tryUpdateL tradeL
+                            tryUpdate trade
                                 (\m -> { m | basket = newBasket } ! [])
                                 { model | inventory = newInv }
                 )
                 model
 
         EmptyBasket ->
-            updateIfL tradeL
+            updateIf trade
                 (\m model ->
-                    tryUpdateL tradeL
+                    tryUpdate trade
                         (\m -> { m | basket = Material.empty } ! [])
                         { model
                             | inventory =
@@ -349,14 +339,14 @@ handleTradeMsg { toGameServer, toMsg } msg model =
                         )
 
         Shake ->
-            tryUpdateL tradeL
+            tryUpdate trade
                 (\m ->
                     m ! [ toGameServer (Api.Trade m.basket) ]
                 )
                 model
 
         YieldRoll yield ->
-            updateIfL tradeL
+            updateIf trade
                 (\_ model ->
                     { model
                         | inventory =
@@ -377,10 +367,10 @@ handleAction action model =
             Game (initGameModel name) ! []
 
         Api.GameStateChanged stage ->
-            tryUpdateL gameL (changeStage stage) model
+            tryUpdate game (changeStage stage) model
 
         Api.Auction seed ->
-            tryUpdateL (gameL |> goIn auctionL)
+            tryUpdate (game |> goIn auction)
                 (\m ->
                     { m
                         | auction =
@@ -395,7 +385,7 @@ handleAction action model =
                 model
 
         Api.BidUpdated bid winner ->
-            tryUpdateL (gameL |> goIn auctionL)
+            tryUpdate (game |> goIn auction)
                 (\m ->
                     { m
                         | auction =
@@ -416,7 +406,7 @@ handleAction action model =
                 model
 
         Api.SetClock ms ->
-            tryUpdateL gameL
+            tryUpdate game
                 (\m ->
                     { m
                         | stage =
@@ -432,7 +422,7 @@ handleAction action model =
 
         Api.AuctionWon ->
             {- display "You Won!" message -}
-            (tryUpdateL gameL << updateIfL auctionL)
+            (tryUpdate game << updateIf auction)
                 (\m model ->
                     case m.auction of
                         Just a ->
@@ -457,21 +447,21 @@ handleAction action model =
                 model
 
         Api.PriceUpdated price ->
-            tryUpdateL gameL
+            tryUpdate game
                 (\m ->
                     { m | price = Just price } ! []
                 )
                 model
 
         Api.EffectUpdated { yieldRateModifier } ->
-            tryUpdateL gameL
+            tryUpdate game
                 (\m ->
                     { m | yieldRateModifier = yieldRateModifier } ! []
                 )
                 model
 
         Api.SaleCompleted count fruit price ->
-            tryUpdateL gameL
+            tryUpdate game
                 (\m ->
                     { m
                         | gold = m.gold + floor (price * toFloat count)
@@ -486,7 +476,7 @@ handleAction action model =
                 model
 
         Api.TradeCompleted mat ->
-            tryUpdateL (gameL |> goIn tradeL)
+            tryUpdate (game |> goIn trade)
                 (\m -> { m | basket = mat } ! [])
                 model
 
@@ -494,7 +484,7 @@ handleAction action model =
             model ! []
 
         Api.PlayerInfoUpdated info ->
-            tryUpdateL (gameL |> goIn readyL)
+            tryUpdate (game |> goIn ready)
                 (\m -> { m | playerInfo = info } ! [])
                 model
 
@@ -541,32 +531,35 @@ changeStage stage model =
 -- HELPER UPDATERS
 
 
-type alias Lens a b s t =
-    { get : s -> Maybe a
-    , set : b -> s -> t
+type alias Lens submodel updatedSubmodel model updatedModel =
+    { get : model -> Maybe submodel
+    , set : updatedSubmodel -> model -> Maybe updatedModel
     }
 
 
-type alias EffLens a s =
-    Lens a (Eff a) s (Eff s)
+type alias EffLens submodel model =
+    Lens submodel (Eff submodel) model (Eff model)
 
 
-goIn : EffLens a b -> EffLens b c -> EffLens a c
-goIn inner outer =
-    { get = outer.get >> Maybe.andThen inner.get
+goIn :
+    EffLens submodel model
+    -> EffLens model supermodel
+    -> EffLens submodel supermodel
+goIn submodelInModel modelInSuperModel =
+    { get = modelInSuperModel.get >> Maybe.andThen submodelInModel.get
     , set =
-        \a c ->
-            case outer.get c of
-                Just b ->
-                    outer.set (inner.set a b) c
-
-                Nothing ->
-                    Debug.log "No stage found" c ! []
+        \submodel supermodel ->
+            modelInSuperModel.get supermodel
+                |> Maybe.andThen
+                    (submodelInModel.set submodel
+                        >> Maybe.andThen
+                            (flip modelInSuperModel.set supermodel)
+                    )
     }
 
 
-welcomeL : EffLens WelcomeModel AppModel
-welcomeL =
+welcome : EffLens WelcomeModel AppModel
+welcome =
     let
         get model =
             case model of
@@ -577,13 +570,13 @@ welcomeL =
                     Nothing
 
         set ( m, cmd ) model =
-            ( WelcomeScreen m, cmd )
+            Just ( WelcomeScreen m, cmd )
     in
         { get = get, set = set }
 
 
-gameL : EffLens GameModel AppModel
-gameL =
+game : EffLens GameModel AppModel
+game =
     let
         get model =
             case model of
@@ -594,13 +587,13 @@ gameL =
                     Nothing
 
         set ( m, cmd ) model =
-            ( Game m, cmd )
+            Just ( Game m, cmd )
     in
         { get = get, set = set }
 
 
-readyL : EffLens ReadyModel GameModel
-readyL =
+ready : EffLens ReadyModel GameModel
+ready =
     let
         get model =
             case model.stage of
@@ -611,13 +604,13 @@ readyL =
                     Nothing
 
         set ( m, cmd ) model =
-            ( { model | stage = ReadyStage m }, cmd )
+            Just ( { model | stage = ReadyStage m }, cmd )
     in
         { get = get, set = set }
 
 
-productionL : EffLens ProductionModel GameModel
-productionL =
+production : EffLens ProductionModel GameModel
+production =
     let
         get model =
             case model.stage of
@@ -628,13 +621,13 @@ productionL =
                     Nothing
 
         set ( m, cmd ) model =
-            ( { model | stage = ProductionStage m }, cmd )
+            Just ( { model | stage = ProductionStage m }, cmd )
     in
         { get = get, set = set }
 
 
-auctionL : EffLens AuctionModel GameModel
-auctionL =
+auction : EffLens AuctionModel GameModel
+auction =
     let
         get model =
             case model.stage of
@@ -645,13 +638,13 @@ auctionL =
                     Nothing
 
         set ( m, cmd ) model =
-            ( { model | stage = AuctionStage m }, cmd )
+            Just ( { model | stage = AuctionStage m }, cmd )
     in
         { get = get, set = set }
 
 
-tradeL : EffLens TradeModel GameModel
-tradeL =
+trade : EffLens TradeModel GameModel
+trade =
     let
         get model =
             case model.stage of
@@ -662,32 +655,47 @@ tradeL =
                     Nothing
 
         set ( m, cmd ) model =
-            ( { model | stage = TradeStage m }, cmd )
+            Just ( { model | stage = TradeStage m }, cmd )
     in
         { get = get, set = set }
 
 
-updateL : Lens a b s t -> (a -> b) -> s -> Maybe t
-updateL { get, set } upd s =
-    get s |> Maybe.map (\a -> set (upd a) s)
+updateL :
+    Lens submodel updatedSubmodel model updatedModel
+    -> (submodel -> updatedSubmodel)
+    -> model
+    -> Maybe updatedModel
+updateL { get, set } upd model =
+    get model |> Maybe.andThen (upd >> flip set model)
 
 
-tryUpdateL : Lens a b c ( c, Cmd msg ) -> (a -> b) -> c -> ( c, Cmd msg )
-tryUpdateL lens upd s =
-    updateL lens upd s
-        |> Maybe.withDefault (Debug.log "Cannot update" s ! [])
+tryUpdate :
+    Lens submodel updatedSubmodel model (Eff model)
+    -> (submodel -> updatedSubmodel)
+    -> model
+    -> Eff model
+tryUpdate lens upd model =
+    updateL lens upd model
+        |> Maybe.withDefault (Debug.log "Cannot update" model ! [])
 
 
-updateIfL : Lens a b s (Eff s) -> (a -> s -> Eff s) -> s -> Eff s
-updateIfL lens upd s =
-    updateIfL_ lens upd s
-        |> Maybe.withDefault (Debug.log "Cannot update" s ! [])
+updateIf :
+    Lens submodel updatedSubmodel model (Eff model)
+    -> (submodel -> model -> Eff model)
+    -> model
+    -> Eff model
+updateIf lens upd model =
+    updateIf_ lens upd model
+        |> Maybe.withDefault (Debug.log "Cannot update" model ! [])
 
 
-updateIfL_ : Lens a b s t -> (a -> s -> t) -> s -> Maybe t
-updateIfL_ { get } upd s =
-    get s
-        |> Maybe.map (flip upd s)
+updateIf_ :
+    Lens submodel updatedSubmodel model updatedModel
+    -> (submodel -> model -> updatedModel)
+    -> model
+    -> Maybe updatedModel
+updateIf_ { get } upd model =
+    get model |> Maybe.map (flip upd model)
 
 
 
