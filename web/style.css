@@ -43,13 +43,21 @@ body {
     margin-right: auto;
     display: block;
     padding: 20px;
-    border-radius: 20px;
+    border-radius: 5px;
     display: flex;
-    border: 1px solid black;
-    background-color: white;
+    border: 1px solid #888888;
+    background-color: #EEEEEE;
     width: 80%;
-    height: 400px;
+    height: auto;
     transform: translate(-50%, -50%);
+    flex-direction: column;
+}
+
+.card-activation-tray {
+    align-items: center;
+    flex-direction: row;
+    display: flex;
+    margin-right: -10px;
 }
 
 
@@ -140,6 +148,7 @@ input {
 
 .card {
     width: auto;
+    background-color: white;
     height: 265px;
     border: 1px solid grey;
     border-radius: 5px;

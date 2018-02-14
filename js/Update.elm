@@ -181,8 +181,8 @@ updateGame { toServer, toMsg } msg model =
                     msg
                     model
 
-            ZoomCard card ->
-                { model | zoomCard = Just card }
+            ZoomCard maybecard ->
+                { model | zoomCard = maybecard }
                     ! []
 
             CardActivated index ->

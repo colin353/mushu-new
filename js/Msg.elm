@@ -28,7 +28,7 @@ type GameMsg
     | TradeMsg TradeMsg
     | CardActivated Int
     | UpdateTimer Time
-    | ZoomCard Card
+    | ZoomCard (Maybe Card)
 
 
 type ReadyMsg

@@ -89,8 +89,14 @@ gameView model =
 cardDetailView : Card -> Html GameMsg
 cardDetailView card =
     div []
-        [ div [ class "popover" ] [ cardView card ]
-        , div [ class "overlay" ] []
+        [ div [ class "popover" ]
+            [ cardView card
+            , div [ class "card-activation-tray" ]
+                [ div [ class "Tomato" ] [ text "Cost: 3" ]
+                , button [ class "box-button" ] [ text "Activate" ]
+                ]
+            ]
+        , div [ class "overlay", onClick (ZoomCard Nothing) ] []
         ]
 
 
@@ -143,7 +149,7 @@ inventoryView inv =
 
 miniCardView : Card -> Html GameMsg
 miniCardView card =
-    div [ onClick (ZoomCard card), class "card-micro" ] [ text card.name ]
+    div [ onClick (ZoomCard (Just card)), class "card-micro" ] [ text card.name ]
 
 
 cardPlaceholder : Html GameMsg
