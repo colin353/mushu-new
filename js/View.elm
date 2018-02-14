@@ -74,15 +74,15 @@ gameView model =
                         , [ toolbar model
                           , div [] []
                           ]
+                        , case model.zoomCard of
+                            Just c ->
+                                [ cardDetailView c ]
+
+                            Nothing ->
+                                []
                         ]
                     )
               ]
-            , case model.zoomCard of
-                Just c ->
-                    [ cardDetailView c ]
-
-                Nothing ->
-                    []
             ]
 
 
