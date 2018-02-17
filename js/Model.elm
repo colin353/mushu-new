@@ -46,9 +46,7 @@ type alias GameModel =
     , yieldRateModifier : Material Float
     , cards : List Card
     , price : Maybe Price
-    , input : String
-    , messages : List String
-    , zoomCard : Maybe Card
+    , zoomCard : Maybe ( Card, Int )
     }
 
 
@@ -128,8 +126,6 @@ initGameModel name =
     , yieldRateModifier = Material.create (always 1)
     , cards = []
     , price = Nothing
-    , input = ""
-    , messages = []
     }
 
 

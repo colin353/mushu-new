@@ -75,8 +75,8 @@ gameView model =
                           , div [] []
                           ]
                         , case model.zoomCard of
-                            Just c ->
-                                [ cardDetailView c ]
+                            Just ( c, index ) ->
+                                [ cardDetailView model c index ]
 
                             Nothing ->
                                 []
@@ -86,15 +86,36 @@ gameView model =
             ]
 
 
-cardDetailView : Card -> Html GameMsg
-cardDetailView card =
+cardDetailView : GameModel -> Card -> Int -> Html GameMsg
+cardDetailView m card i =
     div []
         [ div [ class "popover" ]
             [ cardView card
-            , div [ class "card-activation-tray" ]
-                [ div [ class "Tomato" ] [ text "Cost: 3" ]
-                , button [ class "box-button" ] [ text "Activate" ]
-                ]
+            , div [ class "card-activation-tray" ] <|
+                List.concat
+                    [ [ text "Cost: " ]
+                    , List.intersperse (text " ") <|
+                        List.filterMap
+                            (\( fr, c ) ->
+                                if c /= 0 then
+                                    Just <|
+                                        div [ class (toString fr) ]
+                                            [ text (toString c) ]
+                                else
+                                    Nothing
+                            )
+                            (Material.toList card.resourceCost)
+                    , [ button
+                            [ class "box-button"
+                            , onClick (CardActivated i)
+                            , disabled
+                                (Helper.isErr
+                                    (Helper.tryApplyCardEffectLocal i m)
+                                )
+                            ]
+                            [ text "Activate" ]
+                      ]
+                    ]
             ]
         , div [ class "overlay", onClick (ZoomCard Nothing) ] []
         ]
@@ -141,15 +162,22 @@ inventoryView inv =
     div [ class "inventory" ]
         (Material.values
             (Material.map
-                (\fruit count -> div [ class ("inventory-item " ++ (toString fruit)) ] [ text (toString count) ])
+                (\fruit count ->
+                    div [ class ("inventory-item " ++ (toString fruit)) ]
+                        [ text (toString count) ]
+                )
                 inv
             )
         )
 
 
-miniCardView : Card -> Html GameMsg
-miniCardView card =
-    div [ onClick (ZoomCard (Just card)), class "card-micro" ] [ text card.name ]
+miniCardView : ( Card, Int ) -> Html GameMsg
+miniCardView indexedCard =
+    div
+        [ onClick (ZoomCard (Just indexedCard))
+        , class "card-micro"
+        ]
+        [ text (Tuple.first indexedCard).name ]
 
 
 cardPlaceholder : Html GameMsg
@@ -162,7 +190,7 @@ toolbar m =
     div [ class "card-shelf" ] <|
         List.take 4
             (List.concat
-                [ List.map miniCardView m.cards
+                [ List.map miniCardView (List.indexedMap (flip (,)) m.cards)
                 , List.repeat 4 cardPlaceholder
                 ]
             )
@@ -182,7 +210,8 @@ readyView m =
         [ div [ class "box" ]
             [ div [ class "box-text" ] [ text "Set your name:" ]
             , input [ placeholder "Anonymous", onInput NameInputChange ] []
-            , button [ class "box-button", onClick (Ready True) ] [ text "Ready" ]
+            , button [ class "box-button", onClick (Ready True) ]
+                [ text "Ready" ]
             ]
         , div [ class "ready-status" ]
             [ div [ class "box-text" ] [ text "Waiting for players..." ]
@@ -358,9 +387,9 @@ cardView card =
     div [ class "card" ]
         [ div [ class "card-heading" ]
             [ div [ class "card-title" ] [ text card.name ]
-            , div [ class "card-cost" ] [ div [ class "Tomato" ] [ text "3" ] ]
             ]
-        , div [ class "card-text" ] [ text "When activated, the fruit will go sour." ]
+        , div [ class "card-text" ]
+            [ text "When activated, the fruit will go sour." ]
         ]
 
 
@@ -372,7 +401,7 @@ auctionView m gold =
                 List.concat
                     [ [ div [ class "box-text" ]
                             [ text "Up for auction:" ]
-                      , (cardView a.card)
+                      , cardView a.card
                       , div [ class "auction-control" ]
                             [ div [ class "auction-status" ]
                                 [ div [ class "box-text" ] [ text "Winner:" ]
@@ -392,7 +421,10 @@ auctionView m gold =
                                 , disabled (gold < Helper.nextBid a)
                                 , class "box-button"
                                 ]
-                                [ text <| "Bid: " ++ toString (Helper.nextBid a) ]
+                                [ text <|
+                                    "Bid: "
+                                        ++ toString (Helper.nextBid a)
+                                ]
                             ]
                       ]
                     ]

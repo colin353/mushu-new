@@ -42,9 +42,11 @@ tryApplyCardEffectLocal index model =
                             |> Material.trySubtract card.resourceCost
                             |> Result.fromMaybe
                                 ("Not enough resources."
-                                    ++ "Card shouldn't have been activatable"
+                                    ++ "Card shouldn't have "
+                                    ++ "been activatable"
                                 )
-                            |> Result.map (\inv -> { m | inventory = inv })
+                            |> Result.map
+                                (\inv -> { m | inventory = inv })
 
                     removeCharge : GameModel -> GameModel
                     removeCharge m =
@@ -58,12 +60,17 @@ tryApplyCardEffectLocal index model =
                                         |> Array.fromList
                                         |> (if chargeLeft == Finite 0 then
                                                 (\a ->
-                                                    case arrayRemove index a of
+                                                    case
+                                                        arrayRemove
+                                                            index
+                                                            a
+                                                    of
                                                         Just a ->
                                                             a
 
                                                         Nothing ->
-                                                            Debug.crash "Index"
+                                                            Debug.crash
+                                                                "Index"
                                                 )
                                             else
                                                 Array.set index
@@ -74,10 +81,17 @@ tryApplyCardEffectLocal index model =
                                            )
                                         |> Array.toList
                         }
+
+                    closeDetailView : GameModel -> GameModel
+                    closeDetailView m =
+                        { m | zoomCard = Nothing }
                 in
                     model
                         |> removeFromInv
-                        |> Result.andThen (removeCharge >> Result.Ok)
+                        |> Result.map
+                            (removeCharge
+                                >> closeDetailView
+                            )
             )
 
 

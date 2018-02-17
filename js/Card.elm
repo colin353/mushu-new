@@ -17,7 +17,10 @@ type alias Card =
 
 fromSeed : Int -> Card
 fromSeed seed =
-    case Array.get (seed % (List.length allCards)) (Array.fromList allCards) of
+    case
+        Array.get (seed % (List.length allCards))
+            (Array.fromList allCards)
+    of
         Just c ->
             c
 
