@@ -6,6 +6,7 @@ import Msg exposing (Msg)
 import Material exposing (Fruit, Material)
 import Api
 import Server
+import ZoomList
 import Array exposing (Array)
 
 
@@ -24,15 +25,10 @@ nextBid auction =
             auction.card.startingBid
 
 
-tryApplyCardEffectLocal :
-    Int
-    -> GameModel
-    -> Result String GameModel
-tryApplyCardEffectLocal index model =
-    model.cards
-        |> Array.fromList
-        |> Array.get index
-        |> Result.fromMaybe "Cannot find card. Index mismatch."
+tryApplyZoomCardEffectLocal : GameModel -> Result String GameModel
+tryApplyZoomCardEffectLocal model =
+    ZoomList.zoomed model.cards
+        |> Result.fromMaybe "No zoomed card"
         |> Result.andThen
             (\card ->
                 let
@@ -41,10 +37,7 @@ tryApplyCardEffectLocal index model =
                         m.inventory
                             |> Material.trySubtract card.resourceCost
                             |> Result.fromMaybe
-                                ("Not enough resources."
-                                    ++ "Card shouldn't have "
-                                    ++ "been activatable"
-                                )
+                                "Not enough resources to activate card."
                             |> Result.map
                                 (\inv -> { m | inventory = inv })
 
@@ -52,39 +45,24 @@ tryApplyCardEffectLocal index model =
                     removeCharge m =
                         { m
                             | cards =
-                                let
-                                    chargeLeft =
-                                        BaseType.add card.charge -1
-                                in
-                                    m.cards
-                                        |> Array.fromList
-                                        |> (if chargeLeft == Finite 0 then
-                                                (\a ->
-                                                    case
-                                                        arrayRemove
-                                                            index
-                                                            a
-                                                    of
-                                                        Just a ->
-                                                            a
-
-                                                        Nothing ->
-                                                            Debug.crash
-                                                                "Index"
-                                                )
+                                ZoomList.updateZoomed
+                                    (\c ->
+                                        let
+                                            chargeLeft =
+                                                BaseType.add card.charge -1
+                                        in
+                                            if chargeLeft == Finite 0 then
+                                                Nothing
                                             else
-                                                Array.set index
-                                                    { card
-                                                        | charge =
-                                                            chargeLeft
-                                                    }
-                                           )
-                                        |> Array.toList
+                                                Just
+                                                    { c | charge = chargeLeft }
+                                    )
+                                    m.cards
                         }
 
                     closeDetailView : GameModel -> GameModel
                     closeDetailView m =
-                        { m | zoomCard = Nothing }
+                        { m | cards = ZoomList.unzoom m.cards }
                 in
                     model
                         |> removeFromInv
@@ -95,20 +73,17 @@ tryApplyCardEffectLocal index model =
             )
 
 
-tryApplyCardEffect :
+tryApplyZoomCardEffect :
     Server.SendToServer
-    -> Int
     -> GameModel
     -> Result String ( GameModel, Cmd Msg )
-tryApplyCardEffect toServer index model =
-    model.cards
-        |> Array.fromList
-        |> Array.get index
-        |> Result.fromMaybe "Cannot find card. Index mismatch."
+tryApplyZoomCardEffect toServer model =
+    ZoomList.zoomed model.cards
+        |> Result.fromMaybe "No zoomed card"
         |> Result.andThen
             (\card ->
-                tryApplyCardEffectLocal index model
-                    |> Result.andThen
+                tryApplyZoomCardEffectLocal model
+                    |> Result.map
                         (\m ->
                             let
                                 send : Cmd Msg
@@ -122,7 +97,7 @@ tryApplyCardEffect toServer index model =
                                             }
                                         )
                             in
-                                Result.Ok ( m, send )
+                                ( m, send )
                         )
             )
 

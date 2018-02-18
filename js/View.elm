@@ -7,6 +7,7 @@ import Msg exposing (..)
 import Timer
 import Lens
 import Helper
+import ZoomList exposing (ZoomList)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -74,9 +75,9 @@ gameView model =
                         , [ toolbar model
                           , div [] []
                           ]
-                        , case model.zoomCard of
-                            Just ( c, index ) ->
-                                [ cardDetailView model c index ]
+                        , case ZoomList.zoomed model.cards of
+                            Just c ->
+                                [ cardDetailView model c ]
 
                             Nothing ->
                                 []
@@ -86,8 +87,8 @@ gameView model =
             ]
 
 
-cardDetailView : GameModel -> Card -> Int -> Html GameMsg
-cardDetailView m card i =
+cardDetailView : GameModel -> Card -> Html GameMsg
+cardDetailView m card =
     div []
         [ div [ class "popover" ]
             [ cardView card
@@ -107,17 +108,17 @@ cardDetailView m card i =
                             (Material.toList card.resourceCost)
                     , [ button
                             [ class "box-button"
-                            , onClick (CardActivated i)
+                            , onClick ActivateButton
                             , disabled
                                 (Helper.isErr
-                                    (Helper.tryApplyCardEffectLocal i m)
+                                    (Helper.tryApplyZoomCardEffectLocal m)
                                 )
                             ]
                             [ text "Activate" ]
                       ]
                     ]
             ]
-        , div [ class "overlay", onClick (ZoomCard Nothing) ] []
+        , div [ class "overlay", onClick DismissCardDetailView ] []
         ]
 
 
@@ -171,13 +172,16 @@ inventoryView inv =
         )
 
 
-miniCardView : ( Card, Int ) -> Html GameMsg
-miniCardView indexedCard =
+{-| Takes the card to display, and also
+the full zoomlist to update the model on user click.
+-}
+miniCardView : Card -> ZoomList Card -> Html GameMsg
+miniCardView card onclickCards =
     div
-        [ onClick (ZoomCard (Just indexedCard))
+        [ onClick (UpdateCards onclickCards)
         , class "card-micro"
         ]
-        [ text (Tuple.first indexedCard).name ]
+        [ text card.name ]
 
 
 cardPlaceholder : Html GameMsg
@@ -190,7 +194,45 @@ toolbar m =
     div [ class "card-shelf" ] <|
         List.take 4
             (List.concat
-                [ List.map miniCardView (List.indexedMap (flip (,)) m.cards)
+                [ {- [note] What this foldr does is generating
+                     a list of `miniCardView`s by consecutively applying
+                     `prev` to the zoomlist of cards to move the zooming
+                     one card to the left each time.
+
+                     `miniCardView` takes the card to display, and also
+                     the full zoomlist to update the model with on click.
+
+                     If the clicked card is not the zoomed card, we update the
+                     model using a zoomlist zoomed at the card, which will
+                     result in the detail view appearing.
+
+                     If on the other hand, the clicked card is the zoomed card,
+                     we update the model using an unzoomed list,
+                     which will result in the detail view closing.
+                  -}
+                  let
+                    acc zoomed c ( cards, views ) =
+                        case ZoomList.prev cards of
+                            Nothing ->
+                                Debug.crash "There should be enough cards"
+
+                            Just cs ->
+                                ( cs
+                                , miniCardView c
+                                    (if zoomed then
+                                        ZoomList.unzoom cs
+                                     else
+                                        cs
+                                    )
+                                    :: views
+                                )
+                  in
+                    Tuple.second <|
+                        ZoomList.foldr
+                            (acc False)
+                            (acc True)
+                            ( ZoomList.unzoom m.cards, [] )
+                            m.cards
                 , List.repeat 4 cardPlaceholder
                 ]
             )
@@ -389,7 +431,9 @@ cardView card =
             [ div [ class "card-title" ] [ text card.name ]
             ]
         , div [ class "card-text" ]
-            [ text "When activated, the fruit will go sour." ]
+            [ -- [tmp] same dummy text for every card
+              text "When activated, the fruit will go sour."
+            ]
         ]
 
 
@@ -431,8 +475,3 @@ auctionView m gold =
 
         Nothing ->
             text "No Cards in Auction"
-
-
-viewMessage : String -> Html msg
-viewMessage msg =
-    div [] [ text msg ]

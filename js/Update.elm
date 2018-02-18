@@ -11,6 +11,7 @@ import Shake
 import Timer
 import Lens exposing (Lens, goIn)
 import Helper
+import ZoomList
 import AnimationFrame
 import Time exposing (Time)
 import Random
@@ -181,14 +182,11 @@ updateGame { toServer, toMsg } msg model =
                     msg
                     model
 
-            ZoomCard maybecard ->
-                { model | zoomCard = maybecard }
-                    ! []
+            UpdateCards cards ->
+                { model | cards = cards } ! []
 
-            CardActivated index ->
-                case
-                    Helper.tryApplyCardEffect toGameServer index model
-                of
+            ActivateButton ->
+                case Helper.tryApplyZoomCardEffect toGameServer model of
                     Ok r ->
                         r
 
@@ -204,6 +202,9 @@ updateGame { toServer, toMsg } msg model =
                             |> Maybe.withDefault model.stage
                 }
                     ! []
+
+            DismissCardDetailView ->
+                { model | cards = ZoomList.unzoom model.cards } ! []
 
 
 updateProduction : ProductionMsg -> Upd ProductionModel
@@ -436,7 +437,9 @@ handleAction action model =
                     case m.auction of
                         Just a ->
                             { model
-                                | cards = a.card :: model.cards
+                                | -- [tofix] handle too many cards
+                                  -- [tofix] append instead of prepend
+                                  cards = ZoomList.prepend a.card model.cards
                                 , gold =
                                     model.gold
                                         - (case a.highestBid of
