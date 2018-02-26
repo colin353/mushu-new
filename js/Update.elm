@@ -655,8 +655,12 @@ tryUpdate :
     -> model
     -> Eff model
 tryUpdate lens upd model =
-    Lens.update lens upd model
-        |> Maybe.withDefault (Debug.log "Cannot update" model ! [])
+    case Lens.update lens upd model of
+        Just m ->
+            m
+
+        Nothing ->
+            Debug.crash "tryUpdate failed"
 
 
 updateIf :
@@ -665,8 +669,12 @@ updateIf :
     -> model
     -> Eff model
 updateIf lens upd model =
-    Lens.updateIf lens upd model
-        |> Maybe.withDefault (Debug.log "Cannot update" model ! [])
+    case Lens.updateIf lens upd model of
+        Just m ->
+            m
+
+        Nothing ->
+            Debug.crash "tryUpdate failed"
 
 
 
