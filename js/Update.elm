@@ -15,6 +15,7 @@ import ZoomList
 import AnimationFrame
 import Time exposing (Time)
 import Random
+import List.Nonempty as Nonempty exposing (Nonempty)
 import Debug
 
 
@@ -247,13 +248,37 @@ handleTradeMsg { toGameServer, toMsg } msg model =
                     -- [note] only makes sense for 0 <= x <= 1
                     -- mod first to generalize?
                     if x < p then
-                        ceiling x
-                    else
                         floor x
+                    else
+                        ceiling x
 
-                binary : Float -> Random.Generator Int
-                binary p =
-                    Random.float 0 1 |> Random.map (roundAt p)
+                yieldWithAvg : Float -> Random.Generator Int
+                yieldWithAvg avg =
+                    {- Write avg=n+p, where n=floor p.
+                       Yield either n or n+1 with probabilities
+                       P(n) = 1-p and P(n+1) = p.
+
+                       The average is then:
+                       n * (1-p) + (n+1) * p
+                       == n+p == avg
+                    -}
+                    let
+                        n =
+                            floor avg
+
+                        p =
+                            avg - toFloat n
+                    in
+                        Random.float 0 1
+                            |> Random.map
+                                (\s ->
+                                    if s < p then
+                                        -- this event has probability p
+                                        n + 1
+                                    else
+                                        -- this event has probability 1-p
+                                        n
+                                )
 
                 yield : Random.Generator (Material Int)
                 yield =
@@ -261,8 +286,9 @@ handleTradeMsg { toGameServer, toMsg } msg model =
                         matRandom =
                             Material.map2
                                 (always
-                                    (\p c ->
-                                        binary p
+                                    (\avg c ->
+                                        yieldWithAvg avg
+                                            -- one yield per factory
                                             |> Random.list c
                                             |> Random.map List.sum
                                     )
