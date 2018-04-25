@@ -15,7 +15,6 @@ import ZoomList
 import AnimationFrame
 import Time exposing (Time)
 import Random
-import List.Nonempty as Nonempty exposing (Nonempty)
 import Debug
 
 
