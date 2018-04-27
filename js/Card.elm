@@ -7,6 +7,7 @@ import Array
 
 type alias Card =
     { name : String
+    , description : String
     , startingBid : Int
     , yieldRateModifier : Material Float
     , priceModifier : Material Float
@@ -31,14 +32,17 @@ fromSeed seed =
 allCards : List Card
 allCards =
     List.concat
-        [ [ blueberryJam ]
+        [ [ blueberryJam, tradeWar ]
         , Material.values famines
+        , Material.values taxes
+        , Material.values marketDepressions
         ]
 
 
 baseCard : Card
 baseCard =
     { name = "Untitled"
+    , description = "No description"
     , startingBid = 3
     , yieldRateModifier = noModifier
     , priceModifier = noModifier
@@ -57,6 +61,28 @@ blueberryJam =
     }
 
 
+tradeWar : Card
+tradeWar =
+    { baseCard
+        | name = "Trade War"
+        , description = "When activated, the prices of all fruits will drop!"
+        , priceModifier = Material.create (always 0.5)
+        , resourceCost = Material.empty
+    }
+
+
+taxes : Material Card
+taxes =
+    Material.create
+        (\fr ->
+            { baseCard
+                | name = toString fr ++ " Tax"
+                , priceModifier = Material.set fr 0.8 noModifier
+                , resourceCost = Material.set Blueberry 5 Material.empty
+            }
+        )
+
+
 {-| @global
 [tofix] not effects yet; server needs to push this to all players
 -}
@@ -66,6 +92,7 @@ famines =
         (\fr ->
             { baseCard
                 | name = toString fr ++ " Famine"
+                , description = "When activated, the factories will yield less."
                 , yieldRateModifier = Material.set fr 0.8 noModifier
                 , resourceCost = Material.set Tomato 5 Material.empty
             }
@@ -81,6 +108,7 @@ marketDepressions =
         (\fr ->
             { baseCard
                 | name = toString fr ++ " Depression"
+                , description = "When activated, demand for the fruit will drop."
                 , priceModifier = Material.set fr 0.8 noModifier
                 , resourceCost = Material.set Tomato 4 Material.empty
             }

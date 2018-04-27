@@ -432,7 +432,7 @@ cardView card =
             ]
         , div [ class "card-text" ]
             [ -- [tmp] same dummy text for every card
-              text "When activated, the fruit will go sour."
+              text card.description
             ]
         ]
 
