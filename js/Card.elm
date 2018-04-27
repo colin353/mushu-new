@@ -66,24 +66,7 @@ tradeWar =
     { baseCard
         | name = "Trade War"
         , description = "When activated, the prices of all fruits will drop!"
-        , priceModifier =
-            {- HELP I'm trapped in an elm factory and don't know how to elm -}
-            (Material.set Blueberry
-                0.5
-                (Material.set
-                    Corn
-                    0.5
-                    (Material.set
-                        Purple
-                        0.5
-                        (Material.set
-                            Tomato
-                            0.5
-                            noModifier
-                        )
-                    )
-                )
-            )
+        , priceModifier = Material.create (always 0.5)
         , resourceCost = Material.empty
     }
 
