@@ -114,8 +114,8 @@ func TestReadyMechanism(t *testing.T) {
 
 	// Now the game should start.
 	game.RecieveMessage(userB, NewReadyMessage(true))
-	if game.state.Name() != ProductionState {
-		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
+	if game.state.Name() != AuctionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), AuctionState)
 	}
 
 }
@@ -177,8 +177,8 @@ func TestReadyMechanismWithMorePlayers(t *testing.T) {
 	}
 
 	game.RecieveMessage(userB, NewReadyMessage(true))
-	if game.state.Name() != ProductionState {
-		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
+	if game.state.Name() != AuctionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), AuctionState)
 	}
 }
 
@@ -201,8 +201,8 @@ func TestReadyMechanismWithLeaver(t *testing.T) {
 
 	// Now the user has left, and the rest are ready, so begin.
 	game.RecieveMessage(userB, NewLeaveMessage())
-	if game.state.Name() != ProductionState {
-		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
+	if game.state.Name() != AuctionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), AuctionState)
 	}
 }
 

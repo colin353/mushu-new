@@ -32,29 +32,6 @@ func TestAuctionBidding(t *testing.T) {
 	}
 }
 
-func TestProductionTimeout(t *testing.T) {
-	connection := TestConnection{}
-	game := NewGame("g", &connection)
-	ctrl := NewProductionController(game)
-	ctrl.Begin()
-
-	game.state = ctrl
-
-	// Wait for the auction to end.
-	game.Tick(ProductionTimeout + 1)
-
-	// Expect the winner to get a winning message.
-	want := TestConnection{}
-	want.Broadcast(NewSetClockMessage(ProductionTimeout))
-	want.Broadcast(NewGameStateChangedMessage(AuctionState))
-	want.Broadcast(NewSetClockMessage(AuctionBidTime))
-
-	if len(want.broadcastLog) == 0 || connection.broadcastLog[0] != want.broadcastLog[0] {
-		t.Errorf("Production timeout: got %q, want %q",
-			connection.broadcastLog, want.broadcastLog)
-	}
-}
-
 func TestAuctionTimeout(t *testing.T) {
 	connection := TestConnection{}
 	game := NewGame("g", &connection)
