@@ -16,7 +16,6 @@ const (
 	GameStateChangedAction MessageAction = "game_state_changed"
 	AuctionSeedAction      MessageAction = "auction_seed"
 	WelcomeAction          MessageAction = "welcome"
-	PriceUpdatedAction     MessageAction = "price_updated"
 	BidUpdatedAction       MessageAction = "bid_updated"
 	SetClockAction         MessageAction = "set_clock"
 	EffectAction           MessageAction = "effect_updated"
@@ -25,7 +24,6 @@ const (
 	// Server-to-client messages
 	AuctionWonAction     MessageAction = "auction_won"
 	TradeCompletedAction MessageAction = "trade_completed"
-	SaleCompletedAction  MessageAction = "sale_completed"
 
 	// Client messages
 	BidAction         MessageAction = "bid"
@@ -33,7 +31,6 @@ const (
 	JoinAction        MessageAction = "join"
 	LeaveAction       MessageAction = "leave"
 	TradeAction       MessageAction = "trade"
-	SellAction        MessageAction = "sell"
 	SetNameAction     MessageAction = "set_name"
 	ApplyEffectAction MessageAction = "apply_effect"
 
@@ -173,36 +170,6 @@ func NewWelcomeMessage(game, state string) Message {
 	}
 }
 
-type PriceUpdatedMessage struct {
-	Action string                    `json:"action"`
-	Price  map[CommodityType]float64 `json:"prices"`
-}
-
-func NewPriceUpdatedMessage(market Market) Message {
-	return PriceUpdatedMessage{
-		Action: string(PriceUpdatedAction),
-		Price:  market.Prices(),
-	}
-}
-
-// SaleCompletedMessage is sent when a sale is completed. It includes the actual
-// price for the goods in the market. The price is the unit price.
-type SaleCompletedMessage struct {
-	Action   string  `json:"action"`
-	Quantity int64   `json:"quantity"`
-	Type     string  `json:"type"`
-	Price    float64 `json:"price"`
-}
-
-func NewSaleCompletedMessage(s SellMessage, price float64) Message {
-	return SaleCompletedMessage{
-		Action:   string(SaleCompletedAction),
-		Quantity: s.Quantity,
-		Type:     s.Type,
-		Price:    price,
-	}
-}
-
 // Client messages
 
 type BidMessage struct {
@@ -269,14 +236,6 @@ type SellMessage struct {
 	Action   string `json:"action"`
 	Quantity int64  `json:"quantity"`
 	Type     string `json:"type"`
-}
-
-func NewSellMessage(t CommodityType, quantity int64) SellMessage {
-	return SellMessage{
-		Action:   string(SellAction),
-		Quantity: quantity,
-		Type:     string(t),
-	}
 }
 
 type SetNameMessage struct {
@@ -362,14 +321,6 @@ func DecodeMessage(data []byte) (Message, error) {
 		message = m
 	case string(TickAction):
 		m := TickMessage{}
-		err = json.Unmarshal(data, &m)
-		message = m
-	case string(SellAction):
-		m := SellMessage{}
-		err = json.Unmarshal(data, &m)
-		message = m
-	case string(SaleCompletedAction):
-		m := SaleCompletedMessage{}
 		err = json.Unmarshal(data, &m)
 		message = m
 	case string(SetNameAction):

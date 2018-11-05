@@ -59,7 +59,6 @@ func TestChangeState(t *testing.T) {
 
 	expected := TestConnection{}
 	expected.Broadcast(NewGameStateChangedMessage(TradeState))
-	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
 	expected.Broadcast(NewSetClockMessage(TradingStageTime))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
@@ -242,11 +241,10 @@ func TestAuctionPhases(t *testing.T) {
 	expected.Broadcast(NewSetClockMessage(AuctionBidTime))
 
 	expected.Broadcast(NewGameStateChangedMessage(TradeState))
-	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
 	expected.Broadcast(NewSetClockMessage(TradingStageTime))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
-		t.Errorf("Auction bidding: ", diff)
+		t.Errorf("Auction bidding: %v", diff)
 	}
 }
 
@@ -288,6 +286,6 @@ func TestEffectsBroadcast(t *testing.T) {
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("Got: %v", connection.broadcastLog)
 		t.Errorf("Want: %v", expected.broadcastLog)
-		t.Errorf("Auction bidding: ", diff)
+		t.Errorf("Auction bidding: %v", diff)
 	}
 }
