@@ -12,6 +12,7 @@ const (
 	WaitingState GameState = "waiting"
 	AuctionState GameState = "auction"
 	TradeState   GameState = "trade"
+	SummaryState GameState = "summary"
 )
 
 const (
@@ -29,6 +30,8 @@ const (
 	// TradeTimeout specifies how long a trade can hang without a
 	// counterpart before it is cancelled.
 	TradeTimeout time.Duration = 100 * time.Millisecond
+	// SummaryStageTime tells how long to wait during the summary stage.
+	SummaryStageTime = 10 * time.Second
 
 	// MinPlayers sets the minimum number of players required before the game
 	// will proceed past the Waiting stage.
@@ -251,6 +254,39 @@ func (s *TradeController) RecieveMessage(u User, m Message) {
 	}
 }
 
+// SummaryController manages the game state during the end-of-turn summary screen.
+type SummaryController struct {
+	name GameState
+	game *Game
+}
+
+func NewSummaryController(game *Game) *SummaryController {
+	return &SummaryController{
+		name: SummaryState,
+		game: game,
+	}
+}
+
+// Name returns the name of the current state.
+func (s *SummaryController) Name() GameState { return s.name }
+
+// Begin is called when the stage becomes active.
+func (s *SummaryController) Begin() {
+	s.game.SetTimeout(SummaryStageTime)
+	s.game.connection.Broadcast(NewSetClockMessage(SummaryStageTime))
+}
+
+// End is called when the stage is no longer active.
+func (s *SummaryController) End() {}
+
+// RecieveMessage is called when the user sends the server a message.
+func (s *SummaryController) RecieveMessage(u User, m Message) {}
+
+// Timer is called when the stage is over, so just begin next stage.
+func (s *SummaryController) Timer(tick time.Duration) {
+	s.game.ChangeState(AuctionState)
+}
+
 // NewStateController creates a state controller based on the requested state.
 func NewStateController(game *Game, state GameState) StateController {
 	switch state {
@@ -260,6 +296,8 @@ func NewStateController(game *Game, state GameState) StateController {
 		return NewAuctionController(game)
 	case TradeState:
 		return NewTradeController(game)
+	case SummaryState:
+		return NewSummaryController(game)
 	default:
 		panic("Unknown state!")
 	}
