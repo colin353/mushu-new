@@ -225,6 +225,7 @@ func (s *TradeController) Begin() {
 
 // Timer is called when the stage is over, so just begin next stage.
 func (s *TradeController) Timer(tick time.Duration) {
+	// TODO: change this to SummaryState when UI has support for it.
 	s.game.ChangeState(AuctionState)
 }
 
