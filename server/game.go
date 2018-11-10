@@ -5,6 +5,17 @@ import (
 	"time"
 )
 
+type CommodityType string
+
+const (
+	Tomato    CommodityType = "tomato"
+	Blueberry CommodityType = "blueberry"
+	Corn      CommodityType = "corn"
+	Purple    CommodityType = "purple"
+)
+
+var AllCommodities []CommodityType = []CommodityType{Tomato, Blueberry, Corn, Purple}
+
 // User represents a single connection to a player, e.g. a websocket.
 type User interface {
 	Message(message Message) error
@@ -25,7 +36,6 @@ type Game struct {
 	state       StateController
 	nextTimeout time.Duration
 	tick        time.Duration
-	Market      Market
 	MinPlayers  int
 	Yield       map[CommodityType]float64
 }
@@ -36,7 +46,6 @@ func NewGame(name string, connection GameConnection) *Game {
 		name:       name,
 		connection: connection,
 		state:      nil,
-		Market:     NewMarket(),
 		Yield:      make(map[CommodityType]float64),
 		MinPlayers: MinPlayers,
 	}
@@ -75,8 +84,6 @@ func (g *Game) Tick(time time.Duration) {
 }
 
 func (g *Game) ApplyEffects(msg ApplyEffectMessage) {
-	g.Market.ApplyModifier(msg.PriceModifier)
-
 	for _, c := range AllCommodities {
 		g.Yield[c] *= msg.YieldRateModifier[c]
 	}

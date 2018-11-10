@@ -9,10 +9,9 @@ import (
 type GameState string
 
 const (
-	WaitingState    GameState = "waiting"
-	ProductionState GameState = "production"
-	AuctionState    GameState = "auction"
-	TradeState      GameState = "trade"
+	WaitingState GameState = "waiting"
+	AuctionState GameState = "auction"
+	TradeState   GameState = "trade"
 )
 
 const (
@@ -111,40 +110,8 @@ func (s *WaitingController) proceedIfReady() {
 	}
 
 	if count >= s.game.MinPlayers {
-		s.game.ChangeState(ProductionState)
+		s.game.ChangeState(AuctionState)
 	}
-}
-
-type ProductionController struct {
-	game *Game
-	name GameState
-}
-
-func NewProductionController(game *Game) *ProductionController {
-	return &ProductionController{
-		game: game,
-		name: ProductionState,
-	}
-}
-
-// Name returns the name of the current state.
-func (s *ProductionController) Name() GameState { return s.name }
-
-// End is called when the state is no longer active.
-func (s *ProductionController) End()                             {}
-func (s *ProductionController) RecieveMessage(u User, m Message) {}
-
-// Begin is called when the state becomes active.
-func (s *ProductionController) Begin() {
-	// The production stage is timed, so we should move to the next stage
-	// after the time interval.
-	s.game.connection.Broadcast(NewSetClockMessage(ProductionTimeout))
-	s.game.SetTimeout(ProductionTimeout)
-}
-
-// Timer is called when the state ends, so just transition to the next state.
-func (s *ProductionController) Timer(tick time.Duration) {
-	s.game.ChangeState(AuctionState)
 }
 
 type AuctionController struct {
@@ -248,8 +215,6 @@ func (s *TradeController) Name() GameState { return s.name }
 
 // Begin is called when the state becomes active.
 func (s *TradeController) Begin() {
-	// Should automatically update the prices at the beginning of the stage.
-	s.game.connection.Broadcast(NewPriceUpdatedMessage(s.game.Market))
 	// The trading stage ends after a certain time.
 	s.game.SetTimeout(TradingStageTime)
 	s.game.connection.Broadcast(NewSetClockMessage(TradingStageTime))
@@ -257,7 +222,7 @@ func (s *TradeController) Begin() {
 
 // Timer is called when the stage is over, so just begin next stage.
 func (s *TradeController) Timer(tick time.Duration) {
-	s.game.ChangeState(ProductionState)
+	s.game.ChangeState(AuctionState)
 }
 
 // End is called when the state is no longer active.
@@ -283,18 +248,6 @@ func (s *TradeController) RecieveMessage(u User, m Message) {
 			s.stagingTime = s.game.GetTime()
 			s.stagedMaterials = msg.Materials
 		}
-	case SellMessage:
-		// First, determine the price that the user would get.
-		price, err := s.game.Market.Sell(CommodityType(msg.Type), msg.Quantity)
-		if err != nil {
-			log.Printf("Got invalid SellMessage: %v", err)
-			return
-		}
-		// Inform the user that their sale is done.
-		response := NewSaleCompletedMessage(msg, price)
-		u.Message(response)
-		// Update all other users that the price has changed.
-		s.game.connection.Broadcast(NewPriceUpdatedMessage(s.game.Market))
 	}
 }
 
@@ -303,8 +256,6 @@ func NewStateController(game *Game, state GameState) StateController {
 	switch state {
 	case WaitingState:
 		return NewWaitingController(game)
-	case ProductionState:
-		return NewProductionController(game)
 	case AuctionState:
 		return NewAuctionController(game)
 	case TradeState:

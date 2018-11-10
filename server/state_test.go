@@ -32,29 +32,6 @@ func TestAuctionBidding(t *testing.T) {
 	}
 }
 
-func TestProductionTimeout(t *testing.T) {
-	connection := TestConnection{}
-	game := NewGame("g", &connection)
-	ctrl := NewProductionController(game)
-	ctrl.Begin()
-
-	game.state = ctrl
-
-	// Wait for the auction to end.
-	game.Tick(ProductionTimeout + 1)
-
-	// Expect the winner to get a winning message.
-	want := TestConnection{}
-	want.Broadcast(NewSetClockMessage(ProductionTimeout))
-	want.Broadcast(NewGameStateChangedMessage(AuctionState))
-	want.Broadcast(NewSetClockMessage(AuctionBidTime))
-
-	if len(want.broadcastLog) == 0 || connection.broadcastLog[0] != want.broadcastLog[0] {
-		t.Errorf("Production timeout: got %q, want %q, diff: %v",
-			connection.broadcastLog, want.broadcastLog)
-	}
-}
-
 func TestAuctionTimeout(t *testing.T) {
 	connection := TestConnection{}
 	game := NewGame("g", &connection)
@@ -75,36 +52,6 @@ func TestAuctionTimeout(t *testing.T) {
 
 	if diff := CompareMessageLog(user, want); diff != "" {
 		t.Errorf("AuctionWonMessage: %q, %q, diff: %v",
-			user.messageLog, want.messageLog, diff)
-	}
-}
-
-func TestSelling(t *testing.T) {
-	connection := TestConnection{}
-	game := NewGame("g", &connection)
-	ctrl := NewTradeController(game)
-	game.state = ctrl
-	game.Market.Commodities[Tomato].Value = 100
-	game.Market.Commodities[Tomato].Supply = 100
-	game.Market.Commodities[Tomato].Demand = 100
-
-	user := &TestUser{}
-	ctrl.RecieveMessage(user, NewSellMessage(Tomato, 1))
-
-	// Expect the winner to get a winning message.
-	want := &TestUser{}
-	want.Message(NewSaleCompletedMessage(NewSellMessage(Tomato, 1), 50))
-
-	if diff := CompareMessageLog(user, want); diff != "" {
-		t.Errorf("SaleCompletedMessage: %q, %q, diff: %v",
-			user.messageLog, want.messageLog, diff)
-	}
-
-	expected := TestConnection{}
-	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
-
-	if diff := CompareBroadcastLog(connection, expected); diff != "" {
-		t.Errorf("SaleCompletedMessage: %q, %q, diff: %v",
 			user.messageLog, want.messageLog, diff)
 	}
 }

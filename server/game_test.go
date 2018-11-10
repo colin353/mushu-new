@@ -59,7 +59,6 @@ func TestChangeState(t *testing.T) {
 
 	expected := TestConnection{}
 	expected.Broadcast(NewGameStateChangedMessage(TradeState))
-	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
 	expected.Broadcast(NewSetClockMessage(TradingStageTime))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
@@ -115,8 +114,8 @@ func TestReadyMechanism(t *testing.T) {
 
 	// Now the game should start.
 	game.RecieveMessage(userB, NewReadyMessage(true))
-	if game.state.Name() != ProductionState {
-		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
+	if game.state.Name() != AuctionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), AuctionState)
 	}
 
 }
@@ -178,8 +177,8 @@ func TestReadyMechanismWithMorePlayers(t *testing.T) {
 	}
 
 	game.RecieveMessage(userB, NewReadyMessage(true))
-	if game.state.Name() != ProductionState {
-		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
+	if game.state.Name() != AuctionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), AuctionState)
 	}
 }
 
@@ -202,8 +201,8 @@ func TestReadyMechanismWithLeaver(t *testing.T) {
 
 	// Now the user has left, and the rest are ready, so begin.
 	game.RecieveMessage(userB, NewLeaveMessage())
-	if game.state.Name() != ProductionState {
-		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
+	if game.state.Name() != AuctionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), AuctionState)
 	}
 }
 
@@ -242,11 +241,10 @@ func TestAuctionPhases(t *testing.T) {
 	expected.Broadcast(NewSetClockMessage(AuctionBidTime))
 
 	expected.Broadcast(NewGameStateChangedMessage(TradeState))
-	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
 	expected.Broadcast(NewSetClockMessage(TradingStageTime))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
-		t.Errorf("Auction bidding: ", diff)
+		t.Errorf("Auction bidding: %v", diff)
 	}
 }
 
@@ -288,6 +286,6 @@ func TestEffectsBroadcast(t *testing.T) {
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("Got: %v", connection.broadcastLog)
 		t.Errorf("Want: %v", expected.broadcastLog)
-		t.Errorf("Auction bidding: ", diff)
+		t.Errorf("Auction bidding: %v", diff)
 	}
 }
