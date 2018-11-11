@@ -468,21 +468,6 @@ handleAction action model =
                 )
                 model
 
-        Api.SaleCompleted count fruit price ->
-            tryUpdate game
-                (\m ->
-                    { m
-                        | gold = m.gold + floor (price * toFloat count)
-                        , inventory =
-                            {- [note] hides negative item error -}
-                            Material.update fruit
-                                (\c -> max 0 (c - count))
-                                m.inventory
-                    }
-                        ! []
-                )
-                model
-
         Api.TradeCompleted mat ->
             tryUpdate (game |> goIn trade)
                 (\m -> { m | basket = mat } ! [])

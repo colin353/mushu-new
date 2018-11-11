@@ -19,7 +19,6 @@ type Action
     | BidUpdated Int String
     | AuctionWon
     | EffectActivated CardSeed String
-    | SaleCompleted Int Fruit Float
     | TradeCompleted (Material Int)
     | GameOver String
     | PlayerInfoUpdated (List PlayerInfo)

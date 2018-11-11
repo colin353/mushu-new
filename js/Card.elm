@@ -5,10 +5,7 @@ module Card exposing
     , blueberryJam
     , famines
     , fromSeed
-    , marketDepressions
     , noModifier
-    , taxes
-    , tradeWar
     )
 
 import Array
@@ -23,7 +20,6 @@ type alias Card =
     , description : String
     , startingBid : Int
     , yieldRateModifier : Material Float
-    , priceModifier : Material Float
     , resourceCost : Material Int
     , charge : Uber Int
     }
@@ -49,10 +45,8 @@ allCards : List Card
 allCards =
     List.indexedMap (\i c -> { c | id_ = i }) <|
         List.concat
-            [ [ blueberryJam, tradeWar ]
+            [ [ blueberryJam ]
             , Material.values famines
-            , Material.values taxes
-            , Material.values marketDepressions
             ]
 
 
@@ -63,7 +57,6 @@ baseCard =
     , description = "No description"
     , startingBid = 3
     , yieldRateModifier = noModifier
-    , priceModifier = noModifier
     , resourceCost = Material.empty
     , charge = Finite 1
     }
@@ -79,28 +72,6 @@ blueberryJam =
     }
 
 
-tradeWar : Card
-tradeWar =
-    { baseCard
-        | name = "Trade War"
-        , description = "When activated, the prices of all fruits will drop!"
-        , priceModifier = Material.create (always 0.5)
-        , resourceCost = Material.empty
-    }
-
-
-taxes : Material Card
-taxes =
-    Material.create
-        (\fr ->
-            { baseCard
-                | name = toString fr ++ " Tax"
-                , priceModifier = Material.set fr 0.8 noModifier
-                , resourceCost = Material.set Blueberry 5 Material.empty
-            }
-        )
-
-
 {-| @global
 [tofix] not effects yet; server needs to push this to all players
 -}
@@ -113,22 +84,6 @@ famines =
                 , description = "When activated, the factories will yield less."
                 , yieldRateModifier = Material.set fr 0.8 noModifier
                 , resourceCost = Material.set Tomato 5 Material.empty
-            }
-        )
-
-
-{-| @global
-[tofix] not effects yet; server needs to push this to all players
--}
-marketDepressions : Material Card
-marketDepressions =
-    Material.create
-        (\fr ->
-            { baseCard
-                | name = toString fr ++ " Depression"
-                , description = "When activated, demand for the fruit will drop."
-                , priceModifier = Material.set fr 0.8 noModifier
-                , resourceCost = Material.set Tomato 4 Material.empty
             }
         )
 

@@ -253,35 +253,15 @@ func TestEffectsBroadcast(t *testing.T) {
 	game := NewGame("g", &connection)
 	game.MinPlayers = 2
 
-	yield := map[CommodityType]float64{
-		"tomato":    1.00,
-		"purple":    2.00,
-		"blueberry": 3.00,
-		"corn":      0.50,
-	}
-
-	yield_squared := map[CommodityType]float64{
-		"tomato":    1.00,
-		"purple":    4.00,
-		"blueberry": 9.00,
-		"corn":      0.25,
-	}
-
-	rate := map[CommodityType]float64{
-		"tomato":    1.00,
-		"purple":    2.00,
-		"blueberry": 2.00,
-		"corn":      1.00,
-	}
 
 	userA := &TestUser{name: "Faker"}
 
-	game.RecieveMessage(userA, NewApplyEffectMessage(yield, rate, 100))
-	game.RecieveMessage(userA, NewApplyEffectMessage(yield, rate, 100))
+	game.RecieveMessage(userA, NewActivateEffectMessage(1, 100))
+	game.RecieveMessage(userA, NewActivateEffectMessage(2, 100))
 
 	expected := TestConnection{}
-	expected.Broadcast(NewEffectMessage(yield))
-	expected.Broadcast(NewEffectMessage(yield_squared))
+	expected.Broadcast(NewEffectMessage(1, "Faker"))
+	expected.Broadcast(NewEffectMessage(2, "Faker"))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("Got: %v", connection.broadcastLog)

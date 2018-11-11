@@ -18,7 +18,7 @@ const (
 	WelcomeAction          MessageAction = "welcome"
 	BidUpdatedAction       MessageAction = "bid_updated"
 	SetClockAction         MessageAction = "set_clock"
-	EffectAction           MessageAction = "effect_updated"
+	EffectAction           MessageAction = "effect_activated"
 	PlayerInfoUpdateAction MessageAction = "player_info_updated"
 
 	// Server-to-client messages
@@ -26,13 +26,13 @@ const (
 	TradeCompletedAction MessageAction = "trade_completed"
 
 	// Client messages
-	BidAction         MessageAction = "bid"
-	ReadyAction       MessageAction = "ready"
-	JoinAction        MessageAction = "join"
-	LeaveAction       MessageAction = "leave"
-	TradeAction       MessageAction = "trade"
-	SetNameAction     MessageAction = "set_name"
-	ApplyEffectAction MessageAction = "apply_effect"
+	BidAction            MessageAction = "bid"
+	ReadyAction          MessageAction = "ready"
+	JoinAction           MessageAction = "join"
+	LeaveAction          MessageAction = "leave"
+	TradeAction          MessageAction = "trade"
+	SetNameAction        MessageAction = "set_name"
+	ActivateEffectAction MessageAction = "activate_effect"
 
 	// Special debug-only actions
 	TickAction MessageAction = "tick"
@@ -105,14 +105,16 @@ func NewBidUpdatedMessage(bid int, winner string) Message {
 }
 
 type EffectMessage struct {
-	Action string                    `json:"action"`
-	Yield  map[CommodityType]float64 `json:"yield_rate_modifier"`
+	Action string `json:"action"`
+	Id     int    `json:"id"`
+	Author string `json:"author"`
 }
 
-func NewEffectMessage(yield map[CommodityType]float64) Message {
+func NewEffectMessage(id int, author string) Message {
 	return EffectMessage{
 		Action: string(EffectAction),
-		Yield:  yield,
+		Id:     id,
+		Author: author,
 	}
 }
 
@@ -250,19 +252,17 @@ func NewSetNameMessage(name string) SetNameMessage {
 	}
 }
 
-type ApplyEffectMessage struct {
-	Action            string                    `json:"action"`
-	YieldRateModifier map[CommodityType]float64 `json:"yield_rate_modifier"`
-	PriceModifier     map[CommodityType]float64 `json:"price_modifier"`
-	Timeout           int64
+type ActivateEffectMessage struct {
+	Action  string `json:"action"`
+	Id      int    `json:"id"`
+	Timeout int64
 }
 
-func NewApplyEffectMessage(yield, rate map[CommodityType]float64, timeout int64) Message {
-	return ApplyEffectMessage{
-		Action:            string(ApplyEffectAction),
-		YieldRateModifier: yield,
-		PriceModifier:     rate,
-		Timeout:           timeout,
+func NewActivateEffectMessage(id int, timeout int64) Message {
+	return ActivateEffectMessage{
+		Action:  string(ActivateEffectAction),
+		Id:      id,
+		Timeout: timeout,
 	}
 }
 
@@ -327,8 +327,8 @@ func DecodeMessage(data []byte) (Message, error) {
 		m := SetNameMessage{}
 		err = json.Unmarshal(data, &m)
 		message = m
-	case string(ApplyEffectAction):
-		m := ApplyEffectMessage{}
+	case string(ActivateEffectAction):
+		m := ActivateEffectMessage{}
 		err = json.Unmarshal(data, &m)
 		message = m
 	default:

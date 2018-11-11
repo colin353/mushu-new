@@ -83,13 +83,9 @@ func (g *Game) Tick(time time.Duration) {
 	}
 }
 
-func (g *Game) ApplyEffects(msg ApplyEffectMessage) {
-	for _, c := range AllCommodities {
-		g.Yield[c] *= msg.YieldRateModifier[c]
-	}
-
-	// Inform the consumers that the effects are updated.
-	g.connection.Broadcast(NewEffectMessage(g.Yield))
+func (g *Game) ActivateEffects(msg ActivateEffectMessage, user User) {
+	// Inform the consumers that the effects are activated.
+	g.connection.Broadcast(NewEffectMessage(msg.Id, user.Name()))
 }
 
 // RecieveMessage is called when a user sends a message to the server.
@@ -97,11 +93,11 @@ func (g *Game) RecieveMessage(user User, message Message) {
 	switch msg := message.(type) {
 	case JoinMessage:
 		user.Message(NewWelcomeMessage(g.name, string(g.state.Name())))
-		user.Message(NewEffectMessage(g.Yield))
+		// TODO: store effects and broadcast to new players
 	case SetNameMessage:
 		user.SetName(msg.Name)
-	case ApplyEffectMessage:
-		g.ApplyEffects(msg)
+	case ActivateEffectMessage:
+		g.ActivateEffects(msg, user)
 	}
 	g.state.RecieveMessage(user, message)
 }
