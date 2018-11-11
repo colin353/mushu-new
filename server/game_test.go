@@ -253,7 +253,6 @@ func TestEffectsBroadcast(t *testing.T) {
 	game := NewGame("g", &connection)
 	game.MinPlayers = 2
 
-
 	userA := &TestUser{name: "Faker"}
 
 	game.RecieveMessage(userA, NewActivateEffectMessage(1, 100))
