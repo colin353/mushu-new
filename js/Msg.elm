@@ -1,10 +1,10 @@
-module Msg exposing (..)
+module Msg exposing (AppMsg(..), AuctionMsg(..), GameMsg(..), Msg(..), ProductionMsg(..), ReadyMsg(..), TradeMsg(..), WelcomeMsg(..))
 
+import Api
 import Card exposing (Card)
 import Material exposing (Fruit, Material)
-import Api
-import ZoomList exposing (ZoomList)
 import Time exposing (Time)
+import ZoomList exposing (ZoomList)
 
 
 type Msg
@@ -24,7 +24,6 @@ type WelcomeMsg
 
 type GameMsg
     = ReadyMsg ReadyMsg
-    | ProductionMsg ProductionMsg
     | AuctionMsg AuctionMsg
     | TradeMsg TradeMsg
     | ActivateButton
@@ -42,7 +41,6 @@ type ReadyMsg
 type TradeMsg
     = Yield
     | MoveToBasket Fruit Int
-    | SellButton Fruit
     | EmptyBasket
     | Shake
     | YieldRoll (Material Int)

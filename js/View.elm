@@ -1,17 +1,17 @@
 module View exposing (view)
 
 import Card exposing (Card)
-import Material exposing (Material)
-import Model exposing (..)
-import Msg exposing (..)
-import Timer
-import Lens
 import Helper
-import ZoomList exposing (ZoomList)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Lens
+import Material exposing (Material)
+import Model exposing (..)
+import Msg exposing (..)
 import Time
+import Timer
+import ZoomList exposing (ZoomList)
 
 
 view : Model -> Html Msg
@@ -58,10 +58,6 @@ gameView model =
                         ReadyStage m ->
                             Html.map ReadyMsg (readyView m)
 
-                        ProductionStage m ->
-                            Html.map ProductionMsg
-                                (productionView model.factories m)
-
                         AuctionStage m ->
                             Html.map AuctionMsg (auctionView m model.gold)
 
@@ -102,6 +98,7 @@ cardDetailView m card =
                                     Just <|
                                         div [ class (toString fr) ]
                                             [ text (toString c) ]
+
                                 else
                                     Nothing
                             )
@@ -164,7 +161,7 @@ inventoryView inv =
         (Material.values
             (Material.map
                 (\fruit count ->
-                    div [ class ("inventory-item " ++ (toString fruit)) ]
+                    div [ class ("inventory-item " ++ toString fruit) ]
                         [ text (toString count) ]
                 )
                 inv
@@ -221,18 +218,19 @@ toolbar m =
                                 , miniCardView c
                                     (if zoomed then
                                         ZoomList.unzoom cs
+
                                      else
                                         cs
                                     )
                                     :: views
                                 )
                   in
-                    Tuple.second <|
-                        ZoomList.foldr
-                            (acc False)
-                            (acc True)
-                            ( ZoomList.unzoom m.cards, [] )
-                            m.cards
+                  Tuple.second <|
+                    ZoomList.foldr
+                        (acc False)
+                        (acc True)
+                        ( ZoomList.unzoom m.cards, [] )
+                        m.cards
                 , List.repeat 4 cardPlaceholder
                 ]
             )
@@ -241,9 +239,10 @@ toolbar m =
 readyOrWaitingIcon : Bool -> Html ReadyMsg
 readyOrWaitingIcon state =
     if state then
-        i [ class ("material-icons ready-icon ready") ] [ text "check" ]
+        i [ class "material-icons ready-icon ready" ] [ text "check" ]
+
     else
-        i [ class ("material-icons ready-icon waiting") ] [ text "timelapse" ]
+        i [ class "material-icons ready-icon waiting" ] [ text "timelapse" ]
 
 
 readyView : ReadyModel -> Html ReadyMsg
@@ -271,10 +270,10 @@ readyView m =
 
 
 tradeView : GameModel -> TradeModel -> Html TradeMsg
-tradeView { inventory, price } m =
+tradeView { inventory } m =
     let
         setDisplayStyle display =
-            div << ((::) (style [ ( "display", display ) ]))
+            div << (::) (style [ ( "display", display ) ])
 
         table =
             setDisplayStyle "table"
@@ -285,143 +284,81 @@ tradeView { inventory, price } m =
         cell =
             setDisplayStyle "table-cell"
     in
-        table [] <|
-            List.concat
-                [ [ row [] <|
-                        List.map (cell [] << List.singleton) <|
-                            List.concat
-                                [ [ text "Basket:" ]
-                                , List.map
-                                    (text
-                                        << toString
-                                        << flip Material.lookup m.basket
-                                    )
-                                    Material.allFruits
-                                , [ button [ onClick EmptyBasket ]
-                                        [ text "Empty" ]
-                                  ]
-                                ]
-                  , row
-                        []
-                    <|
-                        List.map (cell [] << List.singleton) <|
-                            List.concat
-                                [ [ text "" ]
-                                , List.map
-                                    (\fr ->
-                                        button
-                                            [ onClick (MoveToBasket fr 1)
-                                            , disabled
-                                                (Nothing
-                                                    == Helper.move fr
-                                                        1
-                                                        inventory
-                                                        m.basket
-                                                )
-                                            ]
-                                            [ text "^" ]
-                                    )
-                                    Material.allFruits
-                                ]
-                  , row
-                        []
-                    <|
-                        List.map (cell [] << List.singleton) <|
-                            List.concat
-                                [ [ text "" ]
-                                , List.map
-                                    (\fr ->
-                                        button
-                                            [ onClick (MoveToBasket fr -1)
-                                            , disabled
-                                                (Nothing
-                                                    == Helper.move fr
-                                                        -1
-                                                        inventory
-                                                        m.basket
-                                                )
-                                            ]
-                                            [ text "v" ]
-                                    )
-                                    Material.allFruits
-                                ]
-                  , row
-                        []
-                    <|
-                        List.map (cell [] << List.singleton) <|
-                            List.concat
-                                [ [ text "Inv:" ]
-                                , List.map
-                                    (text
-                                        << toString
-                                        << flip Material.lookup inventory
-                                    )
-                                    Material.allFruits
-                                ]
-                  ]
-                , case price of
-                    Nothing ->
-                        []
-
-                    Just p ->
-                        [ row [] <|
-                            List.map (cell [] << List.singleton) <|
-                                List.concat
-                                    [ [ text "Sell" ]
-                                    , List.map
-                                        (\fr ->
-                                            button
-                                                [ onClick (SellButton fr)
-                                                , disabled
-                                                    (Material.lookup fr
-                                                        inventory
-                                                        < 1
-                                                    )
-                                                ]
-                                                [ text
-                                                    (toString
-                                                        (floor
-                                                            (Material.lookup
-                                                                fr
-                                                                p
-                                                            )
-                                                        )
-                                                        ++ "g"
-                                                    )
-                                                ]
-                                        )
-                                        Material.allFruits
-                                    ]
-                        ]
-                ]
-
-
-productionView : Material Int -> ProductionModel -> Html ProductionMsg
-productionView factories m =
-    div [] <|
-        List.map
-            (\fr ->
-                button [ onClick (FactorySelected fr) ]
-                    [ text
-                        (toString fr
-                            ++ ": "
-                            ++ toString
-                                (Material.lookup fr factories
-                                    + (case m.selected of
-                                        Just selected ->
-                                            if selected == fr then
-                                                1
-                                            else
-                                                0
-
-                                        Nothing ->
-                                            0
-                                      )
+    table [] <|
+        List.concat
+            [ [ row [] <|
+                    List.map (cell [] << List.singleton) <|
+                        List.concat
+                            [ [ text "Basket:" ]
+                            , List.map
+                                (text
+                                    << toString
+                                    << flip Material.lookup m.basket
                                 )
-                        )
-                    ]
-            )
-            Material.allFruits
+                                Material.allFruits
+                            , [ button [ onClick EmptyBasket ]
+                                    [ text "Empty" ]
+                              ]
+                            ]
+              , row
+                    []
+                <|
+                    List.map (cell [] << List.singleton) <|
+                        List.concat
+                            [ [ text "" ]
+                            , List.map
+                                (\fr ->
+                                    button
+                                        [ onClick (MoveToBasket fr 1)
+                                        , disabled
+                                            (Nothing
+                                                == Helper.move fr
+                                                    1
+                                                    inventory
+                                                    m.basket
+                                            )
+                                        ]
+                                        [ text "^" ]
+                                )
+                                Material.allFruits
+                            ]
+              , row
+                    []
+                <|
+                    List.map (cell [] << List.singleton) <|
+                        List.concat
+                            [ [ text "" ]
+                            , List.map
+                                (\fr ->
+                                    button
+                                        [ onClick (MoveToBasket fr -1)
+                                        , disabled
+                                            (Nothing
+                                                == Helper.move fr
+                                                    -1
+                                                    inventory
+                                                    m.basket
+                                            )
+                                        ]
+                                        [ text "v" ]
+                                )
+                                Material.allFruits
+                            ]
+              , row
+                    []
+                <|
+                    List.map (cell [] << List.singleton) <|
+                        List.concat
+                            [ [ text "Inv:" ]
+                            , List.map
+                                (text
+                                    << toString
+                                    << flip Material.lookup inventory
+                                )
+                                Material.allFruits
+                            ]
+              ]
+            ]
 
 
 cardView : Card -> Html a

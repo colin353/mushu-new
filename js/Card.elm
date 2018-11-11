@@ -1,12 +1,25 @@
-module Card exposing (..)
+module Card exposing
+    ( Card
+    , allCards
+    , baseCard
+    , blueberryJam
+    , famines
+    , fromSeed
+    , marketDepressions
+    , noModifier
+    , taxes
+    , tradeWar
+    )
 
-import BaseType exposing (..)
-import Material exposing (Fruit(..), Material)
 import Array
+import BaseType exposing (..)
+import Dict
+import Material exposing (Fruit(..), Material)
 
 
 type alias Card =
-    { name : String
+    { id_ : Int
+    , name : String
     , description : String
     , startingBid : Int
     , yieldRateModifier : Material Float
@@ -18,9 +31,12 @@ type alias Card =
 
 fromSeed : Int -> Card
 fromSeed seed =
+    let
+        id_ =
+            seed % List.length allCards
+    in
     case
-        Array.get (seed % (List.length allCards))
-            (Array.fromList allCards)
+        Array.get id_ (Array.fromList allCards)
     of
         Just c ->
             c
@@ -31,17 +47,19 @@ fromSeed seed =
 
 allCards : List Card
 allCards =
-    List.concat
-        [ [ blueberryJam, tradeWar ]
-        , Material.values famines
-        , Material.values taxes
-        , Material.values marketDepressions
-        ]
+    List.indexedMap (\i c -> { c | id_ = i }) <|
+        List.concat
+            [ [ blueberryJam, tradeWar ]
+            , Material.values famines
+            , Material.values taxes
+            , Material.values marketDepressions
+            ]
 
 
 baseCard : Card
 baseCard =
-    { name = "Untitled"
+    { id_ = -1 -- [hack] bogus value
+    , name = "Untitled"
     , description = "No description"
     , startingBid = 3
     , yieldRateModifier = noModifier
