@@ -7,7 +7,7 @@ jobs:
     docker:
       # specify the version
       - image: colinmerkel/mushu-ci:latest
-      
+
     working_directory: /go/src/github.com/colin353/mushu-new
     steps:
       - checkout
@@ -16,8 +16,6 @@ jobs:
       - run: cd server; go get -v -t -d ./...
       - run: cd server; go test -v ./...
 
-        # Make sure the formatting is right.
-      - run: cd js; sysconfcpus -n 2 elm-format --validate *.elm
         # Try to build the elm code.
       - run: cd js; sysconfcpus -n 2 elm make --yes Main.elm
       - run: cd js; sysconfcpus -n 2 elm-test
@@ -26,7 +24,7 @@ jobs:
     docker:
       # specify the version
       - image: colinmerkel/mushu-ci:latest
-      
+
     working_directory: /go/src/github.com/colin353/mushu-new
     steps:
       - checkout
