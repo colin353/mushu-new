@@ -1,12 +1,31 @@
-module Model exposing (..)
+module Model exposing
+    ( AppModel(..)
+    , Auction
+    , AuctionModel
+    , Bid
+    , GameModel
+    , Model
+    , ReadyModel
+    , Stage(..)
+    , TradeModel
+    , WelcomeModel
+    , initAppModel
+    , initAuctionModel
+    , initGameModel
+    , initModel
+    , initReadyModel
+    , initTradeModel
+    , initWelcomeModel
+    , timer
+    )
 
 import BaseType exposing (..)
 import Card exposing (Card)
-import Material exposing (Fruit, Material)
 import Lens exposing (PureLens)
+import Material exposing (Fruit, Material)
+import Time exposing (Time)
 import Timer exposing (Timer)
 import ZoomList exposing (ZoomList)
-import Time exposing (Time)
 
 
 type alias Model =
@@ -43,16 +62,14 @@ type alias GameModel =
     , name : String
     , gold : Int
     , inventory : Material Int
-    , factories : Material Int
-    , yieldRateModifier : Material Float
+    , factories : List Factory
+    , effects : List Effect
     , cards : ZoomList Card
-    , price : Maybe Price
     }
 
 
 type Stage
     = ReadyStage ReadyModel
-    | ProductionStage ProductionModel
     | AuctionStage AuctionModel
     | TradeStage TradeModel
 
@@ -60,12 +77,6 @@ type Stage
 type alias ReadyModel =
     { ready : Bool
     , playerInfo : List PlayerInfo
-    }
-
-
-type alias ProductionModel =
-    { selected : Maybe Fruit
-    , timer : Timer
     }
 
 
@@ -89,6 +100,21 @@ type alias Bid =
 type alias TradeModel =
     { basket : Material Int
     , timer : Timer
+    }
+
+
+type alias Factory =
+    { name : String
+    , fruit : Fruit
+    , number : Int
+    }
+
+
+type alias Effect =
+    { name : String
+    , author : String
+    , yieldRateModifier : Material Float
+    , roundsLeft : Int
     }
 
 
@@ -118,13 +144,12 @@ initGameModel name =
     , name = "Anonymous"
     , gold = 25
     , inventory = Material.empty
-    , factories = Material.empty
+    , factories = []
 
     -- [note] should perhaps use Maybe since
     -- we are using this to represent server pushed vallue
-    , yieldRateModifier = Material.create (always 1)
+    , effects = []
     , cards = ZoomList.empty
-    , price = Nothing
     }
 
 
@@ -132,15 +157,6 @@ initReadyModel : ReadyModel
 initReadyModel =
     { ready = False
     , playerInfo = []
-    }
-
-
-initProductionModel : ProductionModel
-initProductionModel =
-    { selected = Nothing
-
-    -- [todo] pull this to param so it can be synced with server params
-    , timer = Timer.init (10 * Time.second)
     }
 
 
@@ -168,9 +184,6 @@ timer =
                 ReadyStage _ ->
                     Nothing
 
-                ProductionStage m ->
-                    Just m.timer
-
                 AuctionStage m ->
                     m.auction |> Maybe.map .timer
 
@@ -181,9 +194,6 @@ timer =
             case stage of
                 ReadyStage _ ->
                     Nothing
-
-                ProductionStage m ->
-                    Just <| ProductionStage { m | timer = timer }
 
                 TradeStage m ->
                     Just <| TradeStage { m | timer = timer }
@@ -198,4 +208,4 @@ timer =
                                         m.auction
                             }
     in
-        { get = get, set = set }
+    { get = get, set = set }

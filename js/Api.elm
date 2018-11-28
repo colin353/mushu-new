@@ -1,15 +1,14 @@
-module Api
-    exposing
-        ( Action(..)
-        , ServerAction(..)
-        , decodeMessage
-        , encodeToMessage
-        )
+module Api exposing
+    ( Action(..)
+    , ServerAction(..)
+    , decodeMessage
+    , encodeToMessage
+    )
 
 import BaseType exposing (..)
-import Material exposing (Fruit, Material)
 import Json.Decode as D
 import Json.Encode as E
+import Material exposing (Fruit, Material)
 
 
 type Action
@@ -19,11 +18,7 @@ type Action
     | Auction CardSeed
     | BidUpdated Int String
     | AuctionWon
-    | PriceUpdated Price
-    | EffectUpdated
-        { yieldRateModifier : Material Float
-        }
-    | SaleCompleted Int Fruit Float
+    | EffectActivated CardSeed String
     | TradeCompleted (Material Int)
     | GameOver String
     | PlayerInfoUpdated (List PlayerInfo)
@@ -51,9 +46,6 @@ actionHelp a =
                                 "ready" ->
                                     D.succeed ReadyStageType
 
-                                "production" ->
-                                    D.succeed ProductionStageType
-
                                 "auction" ->
                                     D.succeed AuctionStageType
 
@@ -67,7 +59,7 @@ actionHelp a =
 
         "welcome" ->
             D.map Welcome <|
-                (D.field "game" D.string)
+                D.field "game" D.string
 
         "set_clock" ->
             D.map SetClock
@@ -96,20 +88,11 @@ actionHelp a =
         "auction_won" ->
             D.succeed AuctionWon
 
-        "price_updated" ->
-            D.map PriceUpdated <|
-                D.field "prices" price
-
-        "effect_updated" ->
-            D.map EffectUpdated <|
-                D.map (\yrm -> { yieldRateModifier = yrm })
-                    (D.field "yield_rate_modifier" (material D.float))
-
-        "sale_completed" ->
-            D.map3 SaleCompleted
-                (D.field "quantiy" D.int)
-                (D.field "type" fruit)
-                (D.field "price" D.float)
+        "effect_activated" ->
+            D.map2 EffectActivated
+                (D.field "card_id" D.int)
+                --[note] doesn't sync up with name change
+                (D.field "author" D.string)
 
         "trade_completed" ->
             D.map TradeCompleted <|
@@ -150,11 +133,6 @@ fruit =
             )
 
 
-price : D.Decoder Price
-price =
-    material D.float
-
-
 material : D.Decoder a -> D.Decoder (Material a)
 material a =
     D.map4 Material
@@ -172,10 +150,7 @@ type ServerAction
     | Sell Fruit Int
     | Trade (Material Int)
     | ActivateCard CardSeed
-    | ApplyEffect
-        { yieldRateModifier : Material Float
-        , priceModifier : Material Float
-        }
+    | ActivateEffect CardSeed
 
 
 encodeToMessage : ServerAction -> String
@@ -229,21 +204,16 @@ encodeServerAction a =
                 ActivateCard seed ->
                     ( "activate_card", [] )
 
-                ApplyEffect { yieldRateModifier, priceModifier } ->
-                    ( "apply_effect"
-                    , [ ( "yield_rate_modifier"
-                        , encodeMaterial E.float yieldRateModifier
-                        )
-                      , ( "price_modifier"
-                        , encodeMaterial E.float priceModifier
-                        )
+                ActivateEffect id_ ->
+                    ( "activate_effect"
+                    , [ ( "card_id", E.int id_ )
                       ]
                     )
     in
-        E.object <|
-            [ ( "action", E.string actionStr )
-            ]
-                ++ values
+    E.object <|
+        [ ( "action", E.string actionStr )
+        ]
+            ++ values
 
 
 encodeFruit : Fruit -> E.Value

@@ -1,21 +1,21 @@
-module Update exposing (update, subscriptions)
+module Update exposing (subscriptions, update)
 
+import AnimationFrame
+import Api
 import BaseType exposing (..)
-import Material exposing (Material)
 import Card exposing (Card)
+import Debug
+import Helper
+import Lens exposing (Lens, goIn)
+import Material exposing (Material)
 import Model exposing (..)
 import Msg exposing (..)
-import Api
+import Random
 import Server
 import Shake
-import Timer
-import Lens exposing (Lens, goIn)
-import Helper
-import ZoomList
-import AnimationFrame
 import Time exposing (Time)
-import Random
-import Debug
+import Timer
+import ZoomList
 
 
 subscriptions : Model -> Sub Msg
@@ -98,7 +98,7 @@ update msg model =
                         msg
                         model.app
             in
-                ( { model | app = m }, cmd )
+            ( { model | app = m }, cmd )
 
 
 updateApp : Ctx AppMsg -> AppMsg -> Upd AppModel
@@ -132,13 +132,13 @@ updateWelcome { toServer } msg model =
                 gameName =
                     model.gameNameInput
             in
-                { model | submittedName = Just gameName }
-                    ! [ {- [question] sending Api.JoinGame even necessary?
-                           or does the server add us to the game automatically
-                           upon ws connection?
-                        -}
-                        toServer gameName (Api.JoinGame gameName)
-                      ]
+            { model | submittedName = Just gameName }
+                ! [ {- [question] sending Api.JoinGame even necessary?
+                       or does the server add us to the game automatically
+                       upon ws connection?
+                    -}
+                    toServer gameName (Api.JoinGame gameName)
+                  ]
 
         GameNameInputChange str ->
             { model | gameNameInput = str } ! []
@@ -150,68 +150,58 @@ updateGame { toServer, toMsg } msg model =
         toGameServer =
             toServer model.gameName
     in
-        case msg of
-            ReadyMsg msg ->
-                case msg of
-                    Ready _ ->
-                        model
-                            ! [ toGameServer (Api.Ready True) ]
-
-                    NameInputChange name ->
-                        { model | name = name }
-                            ! [ toGameServer (Api.SetName name) ]
-
-            ProductionMsg msg ->
-                tryUpdate production (updateProduction msg) model
-
-            AuctionMsg msg ->
-                tryUpdate auction
-                    (updateAuction
-                        { toGameServer = toGameServer
-                        , toMsg = toMsg << AuctionMsg
-                        }
-                        msg
-                    )
+    case msg of
+        ReadyMsg msg ->
+            case msg of
+                Ready _ ->
                     model
+                        ! [ toGameServer (Api.Ready True) ]
 
-            TradeMsg msg ->
-                handleTradeMsg
+                NameInputChange name ->
+                    { model | name = name }
+                        ! [ toGameServer (Api.SetName name) ]
+
+        AuctionMsg msg ->
+            tryUpdate auction
+                (updateAuction
                     { toGameServer = toGameServer
-                    , toMsg = AppMsg << GameMsg << TradeMsg
+                    , toMsg = toMsg << AuctionMsg
                     }
                     msg
-                    model
+                )
+                model
 
-            UpdateCards cards ->
-                { model | cards = cards } ! []
-
-            ActivateButton ->
-                case Helper.tryApplyZoomCardEffect toGameServer model of
-                    Ok r ->
-                        r
-
-                    Err e ->
-                        Debug.crash ("Card activation error: " ++ e)
-
-            UpdateTimer tick ->
-                { model
-                    | stage =
-                        Lens.update timer
-                            (Timer.update tick)
-                            model.stage
-                            |> Maybe.withDefault model.stage
+        TradeMsg msg ->
+            handleTradeMsg
+                { toGameServer = toGameServer
+                , toMsg = AppMsg << GameMsg << TradeMsg
                 }
-                    ! []
+                msg
+                model
 
-            DismissCardDetailView ->
-                { model | cards = ZoomList.unzoom model.cards } ! []
+        UpdateCards cards ->
+            { model | cards = cards } ! []
 
+        ActivateButton ->
+            case Helper.tryApplyZoomCardEffect toGameServer model of
+                Ok r ->
+                    r
 
-updateProduction : ProductionMsg -> Upd ProductionModel
-updateProduction msg model =
-    case msg of
-        FactorySelected fr ->
-            { model | selected = Just fr } ! []
+                Err e ->
+                    Debug.crash ("Card activation error: " ++ e)
+
+        UpdateTimer tick ->
+            { model
+                | stage =
+                    Lens.update timer
+                        (Timer.update tick)
+                        model.stage
+                        |> Maybe.withDefault model.stage
+            }
+                ! []
+
+        DismissCardDetailView ->
+            { model | cards = ZoomList.unzoom model.cards } ! []
 
 
 updateAuction : GameCtx AuctionMsg -> AuctionMsg -> Upd AuctionModel
@@ -248,6 +238,7 @@ handleTradeMsg { toGameServer, toMsg } msg model =
                     -- mod first to generalize?
                     if x < p then
                         floor x
+
                     else
                         ceiling x
 
@@ -268,16 +259,30 @@ handleTradeMsg { toGameServer, toMsg } msg model =
                         p =
                             avg - toFloat n
                     in
-                        Random.float 0 1
-                            |> Random.map
-                                (\s ->
-                                    if s < p then
-                                        -- this event has probability p
-                                        n + 1
-                                    else
-                                        -- this event has probability 1-p
-                                        n
-                                )
+                    Random.float 0 1
+                        |> Random.map
+                            (\s ->
+                                if s < p then
+                                    -- this event has probability p
+                                    n + 1
+
+                                else
+                                    -- this event has probability 1-p
+                                    n
+                            )
+
+                -- YIELD RATE CALCULATOR
+                effectsModifier =
+                    List.foldr
+                        (\eff -> Material.map2 (always (*)) eff.yieldRateModifier)
+                        (Material.create (always 1))
+                        model.effects
+
+                baseYield =
+                    List.foldr
+                        (\fac -> Material.set fac.fruit fac.number)
+                        Material.empty
+                        model.factories
 
                 yield : Random.Generator (Material Int)
                 yield =
@@ -292,16 +297,16 @@ handleTradeMsg { toGameServer, toMsg } msg model =
                                             |> Random.map List.sum
                                     )
                                 )
-                                model.yieldRateModifier
-                                model.factories
+                                effectsModifier
+                                baseYield
                     in
-                        Random.map4 Material
-                            matRandom.blueberry
-                            matRandom.tomato
-                            matRandom.corn
-                            matRandom.purple
+                    Random.map4 Material
+                        matRandom.blueberry
+                        matRandom.tomato
+                        matRandom.corn
+                        matRandom.purple
             in
-                ( model, Random.generate (toMsg << YieldRoll) yield )
+            ( model, Random.generate (toMsg << YieldRoll) yield )
 
         MoveToBasket fruit count ->
             updateIf trade
@@ -331,46 +336,6 @@ handleTradeMsg { toGameServer, toMsg } msg model =
                         }
                 )
                 model
-
-        SellButton fruit ->
-            case model.price of
-                Just price ->
-                    { model
-                        | gold =
-                            model.gold
-                                + floor (Material.lookup fruit price)
-                        , inventory =
-                            case
-                                Material.tryUpdate
-                                    fruit
-                                    (\x ->
-                                        let
-                                            newX =
-                                                x - 1
-                                        in
-                                            if newX >= 0 then
-                                                Just newX
-                                            else
-                                                Nothing
-                                    )
-                                    model.inventory
-                            of
-                                Nothing ->
-                                    Debug.crash
-                                        ("""Not enough item to sell.
-                                                    Sell button should've
-                                                    been disabled.""")
-
-                                Just inv ->
-                                    inv
-                    }
-                        ! [ toGameServer (Api.Sell fruit 1) ]
-
-                Nothing ->
-                    Debug.crash
-                        ("No price information."
-                            ++ "Sell button should have been disabled."
-                        )
 
         Shake ->
             tryUpdate trade
@@ -483,32 +448,23 @@ handleAction action model =
                 )
                 model
 
-        Api.PriceUpdated price ->
-            tryUpdate game
-                (\m ->
-                    { m | price = Just price } ! []
-                )
-                model
+        Api.EffectActivated cardId author ->
+            let
+                card =
+                    Card.fromSeed cardId
 
-        Api.EffectUpdated { yieldRateModifier } ->
-            tryUpdate game
-                (\m ->
-                    { m | yieldRateModifier = yieldRateModifier } ! []
-                )
-                model
+                effect =
+                    { name = card.name
+                    , author = author
+                    , yieldRateModifier = card.yieldRateModifier
 
-        Api.SaleCompleted count fruit price ->
-            tryUpdate game
-                (\m ->
-                    { m
-                        | gold = m.gold + floor (price * toFloat count)
-                        , inventory =
-                            {- [note] hides negative item error -}
-                            Material.update fruit
-                                (\c -> max 0 (c - count))
-                                m.inventory
+                    --[tmp] hard coded
+                    , roundsLeft = 2
                     }
-                        ! []
+            in
+            tryUpdate game
+                (\m ->
+                    { m | effects = effect :: m.effects } ! []
                 )
                 model
 
@@ -534,34 +490,15 @@ changeStage stage model =
                 ReadyStageType ->
                     ReadyStage initReadyModel ! []
 
-                ProductionStageType ->
-                    ProductionStage initProductionModel ! []
-
                 AuctionStageType ->
                     AuctionStage initAuctionModel ! []
 
                 TradeStageType ->
                     TradeStage initTradeModel ! []
     in
-        ( { model
-            | stage = newStage
-            , factories =
-                case model.stage of
-                    ProductionStage m ->
-                        case m.selected of
-                            Just selected ->
-                                Material.update selected
-                                    ((+) 1)
-                                    model.factories
-
-                            Nothing ->
-                                model.factories
-
-                    _ ->
-                        model.factories
-          }
-        , cmd
-        )
+    ( { model | stage = newStage }
+    , cmd
+    )
 
 
 
@@ -586,7 +523,7 @@ welcome =
         set ( m, cmd ) model =
             Just ( WelcomeScreen m, cmd )
     in
-        { get = get, set = set }
+    { get = get, set = set }
 
 
 game : EffLens GameModel AppModel
@@ -603,7 +540,7 @@ game =
         set ( m, cmd ) model =
             Just ( Game m, cmd )
     in
-        { get = get, set = set }
+    { get = get, set = set }
 
 
 ready : EffLens ReadyModel GameModel
@@ -620,24 +557,7 @@ ready =
         set ( m, cmd ) model =
             Just ( { model | stage = ReadyStage m }, cmd )
     in
-        { get = get, set = set }
-
-
-production : EffLens ProductionModel GameModel
-production =
-    let
-        get model =
-            case model.stage of
-                ProductionStage m ->
-                    Just m
-
-                _ ->
-                    Nothing
-
-        set ( m, cmd ) model =
-            Just ( { model | stage = ProductionStage m }, cmd )
-    in
-        { get = get, set = set }
+    { get = get, set = set }
 
 
 auction : EffLens AuctionModel GameModel
@@ -654,7 +574,7 @@ auction =
         set ( m, cmd ) model =
             Just ( { model | stage = AuctionStage m }, cmd )
     in
-        { get = get, set = set }
+    { get = get, set = set }
 
 
 trade : EffLens TradeModel GameModel
@@ -671,7 +591,7 @@ trade =
         set ( m, cmd ) model =
             Just ( { model | stage = TradeStage m }, cmd )
     in
-        { get = get, set = set }
+    { get = get, set = set }
 
 
 tryUpdate :

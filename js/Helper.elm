@@ -1,13 +1,13 @@
-module Helper exposing (..)
+module Helper exposing (arrayRemove, bidIncrement, isErr, isOk, move, nextBid, tryApplyZoomCardEffect, tryApplyZoomCardEffectLocal)
 
+import Api
+import Array exposing (Array)
 import BaseType exposing (..)
+import Material exposing (Fruit, Material)
 import Model exposing (..)
 import Msg exposing (Msg)
-import Material exposing (Fruit, Material)
-import Api
 import Server
 import ZoomList
-import Array exposing (Array)
 
 
 bidIncrement : number
@@ -51,11 +51,12 @@ tryApplyZoomCardEffectLocal model =
                                             chargeLeft =
                                                 BaseType.add card.charge -1
                                         in
-                                            if chargeLeft == Finite 0 then
-                                                Nothing
-                                            else
-                                                Just
-                                                    { c | charge = chargeLeft }
+                                        if chargeLeft == Finite 0 then
+                                            Nothing
+
+                                        else
+                                            Just
+                                                { c | charge = chargeLeft }
                                     )
                                     m.cards
                         }
@@ -64,12 +65,12 @@ tryApplyZoomCardEffectLocal model =
                     closeDetailView m =
                         { m | cards = ZoomList.unzoom m.cards }
                 in
-                    model
-                        |> removeFromInv
-                        |> Result.map
-                            (removeCharge
-                                >> closeDetailView
-                            )
+                model
+                    |> removeFromInv
+                    |> Result.map
+                        (removeCharge
+                            >> closeDetailView
+                        )
             )
 
 
@@ -88,16 +89,9 @@ tryApplyZoomCardEffect toServer model =
                             let
                                 send : Cmd Msg
                                 send =
-                                    toServer
-                                        (Api.ApplyEffect
-                                            { yieldRateModifier =
-                                                card.yieldRateModifier
-                                            , priceModifier =
-                                                card.priceModifier
-                                            }
-                                        )
+                                    toServer (Api.ActivateEffect card.id_)
                             in
-                                ( m, send )
+                            ( m, send )
                         )
             )
 
@@ -131,15 +125,16 @@ move fruit count mat1 mat2 =
                 ((+) count)
                 mat2
     in
-        if
-            Material.lookup fruit newMat1
-                < 0
-                || Material.lookup fruit newMat2
-                < 0
-        then
-            Nothing
-        else
-            Just ( newMat1, newMat2 )
+    if
+        Material.lookup fruit newMat1
+            < 0
+            || Material.lookup fruit newMat2
+            < 0
+    then
+        Nothing
+
+    else
+        Just ( newMat1, newMat2 )
 
 
 isOk : Result e a -> Bool

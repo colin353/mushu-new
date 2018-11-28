@@ -1,25 +1,24 @@
-module Material
-    exposing
-        ( Fruit(..)
-        , allFruits
-        , fruitFromString
-        , shorthand
-        , Material
-        , lookup
-        , create
-        , empty
-        , toList
-        , values
-        , map
-        , map2
-        , map3
-        , traverseMaybe
-        , set
-        , update
-        , tryUpdate
-        , trySubtract
-        , fold
-        )
+module Material exposing
+    ( Fruit(..)
+    , Material
+    , allFruits
+    , create
+    , empty
+    , fold
+    , fruitFromString
+    , lookup
+    , map
+    , map2
+    , map3
+    , set
+    , shorthand
+    , toList
+    , traverseMaybe
+    , trySubtract
+    , tryUpdate
+    , update
+    , values
+    )
 
 
 type Fruit
@@ -141,8 +140,8 @@ traverseMaybe mat =
                         (lookup fr mat)
                 )
         )
-        (-- [hack] grab from Blueberry
-         Maybe.map
+        -- [hack] grab from Blueberry
+        (Maybe.map
             (\a -> create (always a))
             (lookup Blueberry mat)
         )
@@ -160,6 +159,7 @@ update fruit upd =
         (\fr ->
             if fr == fruit then
                 upd
+
             else
                 identity
         )
@@ -176,6 +176,7 @@ tryUpdate fruit f =
             (\fr ->
                 if fr == fruit then
                     f
+
                 else
                     Just
             )
@@ -198,10 +199,11 @@ trySubtract =
                                 d =
                                     b - a
                             in
-                                if d >= 0 then
-                                    Just d
-                                else
-                                    Nothing
+                            if d >= 0 then
+                                Just d
+
+                            else
+                                Nothing
                         )
                     )
                 )
